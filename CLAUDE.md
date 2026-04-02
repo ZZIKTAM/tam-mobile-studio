@@ -79,11 +79,11 @@ APK must be signed with the same release key across all machines. Without this, 
    ```
 3. `build.gradle.kts` already configured to read `key.properties` (committed)
 
-**Key files (NOT in git, must be copied manually between machines):**
-- `android/key.properties` — signing passwords
+**Key files (committed to git — private repo):**
+- `android/key.properties` — signing passwords (storePassword=tamstudio2026, keyAlias=upload)
 - `android/app/upload-keystore.jks` — release keystore (2048-bit RSA, valid 10000 days)
 
-**If keystore is lost:** all users must uninstall and reinstall. NEVER lose the keystore.
+**Keystore is in git.** Private repo이므로 git으로 관리. 키를 변경하면 모든 사용자가 앱 재설치 필요.
 
 **Build APK:**
 ```bash

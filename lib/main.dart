@@ -572,7 +572,7 @@ class _DropTrackerPageState extends State<DropTrackerPage> {
 }
 
 // ══════════════════════════════════════
-//  Chat Send Page
+//  Chat Page (receive game chat + send)
 // ══════════════════════════════════════
 
 class ChatSendPage extends StatefulWidget {
@@ -586,35 +586,40 @@ class ChatSendPage extends StatefulWidget {
 class _ChatSendPageState extends State<ChatSendPage> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  List<Map<String, dynamic>> _messages = [];
+  List<Map<String, dynamic>> _chatMessages = [];
+  String _filterChannel = 'ALL';
   bool _sending = false;
+
+  static const Map<String, Color> channelColors = {
+    '월드': Color(0xFFE88BA7),
+    '로컬': Color(0xFF8892A8),
+    '파티': Color(0xFF5EAEFF),
+    '길드': Color(0xFF7DD3A0),
+    '귓속말': Color(0xFFC084FC),
+    '시스템': Color(0xFFA78BFA),
+    '그룹': Color(0xFFF59E0B),
+    '공지': Color(0xFFEF4444),
+  };
 
   @override
   void initState() {
     super.initState();
-    final ref = FirebaseDatabase.instance
-        .ref('users/${widget.userKey}/chat_history')
-        .orderByChild('timestamp')
-        .limitToLast(50);
+    // Subscribe to game chat from PC
+    final ref = FirebaseDatabase.instance.ref('users/${widget.userKey}/chat');
     ref.onValue.listen((event) {
       final data = event.snapshot.value;
       if (data == null) {
-        setState(() => _messages = []);
+        setState(() => _chatMessages = []);
         return;
       }
       List<Map<String, dynamic>> parsed = [];
-      if (data is Map) {
-        data.forEach((key, value) {
-          if (value != null) {
-            final msg = Map<String, dynamic>.from(value as Map);
-            msg['_key'] = key;
-            parsed.add(msg);
-          }
-        });
+      if (data is List) {
+        parsed = data.where((e) => e != null).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      } else if (data is Map) {
+        parsed = data.values.where((e) => e != null).map((e) => Map<String, dynamic>.from(e as Map)).toList();
       }
-      parsed.sort((a, b) =>
-          (a['timestamp'] as num? ?? 0).compareTo(b['timestamp'] as num? ?? 0));
-      setState(() => _messages = parsed);
+      parsed.sort((a, b) => (a['ts'] as num? ?? 0).compareTo(b['ts'] as num? ?? 0));
+      setState(() => _chatMessages = parsed);
       _scrollToBottom();
     });
   }
@@ -631,6 +636,11 @@ class _ChatSendPageState extends State<ChatSendPage> {
     });
   }
 
+  List<Map<String, dynamic>> get _filteredMessages {
+    if (_filterChannel == 'ALL') return _chatMessages;
+    return _chatMessages.where((m) => m['ch'] == _filterChannel).toList();
+  }
+
   Future<void> _sendMessage() async {
     final text = _textController.text.trim();
     if (text.isEmpty || _sending) return;
@@ -641,19 +651,14 @@ class _ChatSendPageState extends State<ChatSendPage> {
     try {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final userRef = FirebaseDatabase.instance.ref('users/${widget.userKey}');
-
-      // Create history entry first to get the key
       final historyRef = userRef.child('chat_history').push();
       final historyKey = historyRef.key ?? '';
 
-      // Write to chat_send for PC to pick up (includes historyKey for status update)
       await userRef.child('chat_send').set({
         'text': text,
         'timestamp': timestamp,
         'historyKey': historyKey,
       });
-
-      // Append to chat_history for display
       await historyRef.set({
         'text': text,
         'timestamp': timestamp,
@@ -673,40 +678,61 @@ class _ChatSendPageState extends State<ChatSendPage> {
 
   @override
   Widget build(BuildContext context) {
+    final filtered = _filteredMessages;
     return SafeArea(
       child: Column(
         children: [
+          // Header
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Row(
               children: [
                 const Icon(Icons.chat, color: Color(0xFFA78BFA), size: 24),
                 const SizedBox(width: 8),
-                const Text('채팅 전송',
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white)),
+                const Text('채팅', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                 const Spacer(),
-                Text('${_messages.length}개',
-                    style:
-                        TextStyle(fontSize: 12, color: Colors.white.withAlpha(128))),
+                Text('${filtered.length}개', style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(128))),
               ],
             ),
           ),
+          // Channel filter
+          SizedBox(
+            height: 32,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              children: ['ALL', '월드', '파티', '길드', '귓속말', '시스템'].map((ch) {
+                final selected = _filterChannel == ch;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: ChoiceChip(
+                    label: Text(ch, style: TextStyle(fontSize: 11, color: selected ? Colors.white : Colors.white.withAlpha(153))),
+                    selected: selected,
+                    onSelected: (_) => setState(() => _filterChannel = ch),
+                    selectedColor: const Color(0xFFA78BFA),
+                    backgroundColor: const Color(0xFF22223A),
+                    side: BorderSide.none,
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 6),
+          // Chat messages
           Expanded(
-            child: _messages.isEmpty
-                ? Center(
-                    child: Text('메시지 없음\n아래에서 채팅을 입력하세요',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white.withAlpha(77))))
+            child: filtered.isEmpty
+                ? Center(child: Text('채팅 없음\nPC에서 게임 접속 후 채팅이 표시됩니다',
+                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withAlpha(77))))
                 : ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: _messages.length,
-                    itemBuilder: (ctx, i) => _buildMessageBubble(_messages[i]),
+                    itemCount: filtered.length,
+                    itemBuilder: (ctx, i) => _buildChatBubble(filtered[i]),
                   ),
           ),
+          // Send input
           Container(
             padding: const EdgeInsets.fromLTRB(12, 8, 8, 12),
             decoration: const BoxDecoration(
@@ -720,16 +746,11 @@ class _ChatSendPageState extends State<ChatSendPage> {
                     controller: _textController,
                     style: const TextStyle(color: Colors.white, fontSize: 14),
                     decoration: InputDecoration(
-                      hintText: '메시지를 입력하세요...',
+                      hintText: '게임 채팅 전송...',
                       hintStyle: TextStyle(color: Colors.white.withAlpha(77)),
-                      filled: true,
-                      fillColor: const Color(0xFF22223A),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 10),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide.none,
-                      ),
+                      filled: true, fillColor: const Color(0xFF22223A),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
                     ),
                     textInputAction: TextInputAction.send,
                     onSubmitted: (_) => _sendMessage(),
@@ -739,17 +760,9 @@ class _ChatSendPageState extends State<ChatSendPage> {
                 IconButton(
                   onPressed: _sending ? null : _sendMessage,
                   icon: _sending
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Color(0xFFA78BFA)))
-                      : const Icon(Icons.arrow_upward,
-                          color: Color(0xFFA78BFA)),
-                  style: IconButton.styleFrom(
-                    backgroundColor: const Color(0xFF22223A),
-                    shape: const CircleBorder(),
-                  ),
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFA78BFA)))
+                      : const Icon(Icons.arrow_upward, color: Color(0xFFA78BFA)),
+                  style: IconButton.styleFrom(backgroundColor: const Color(0xFF22223A), shape: const CircleBorder()),
                 ),
               ],
             ),
@@ -759,38 +772,34 @@ class _ChatSendPageState extends State<ChatSendPage> {
     );
   }
 
-  Widget _buildMessageBubble(Map<String, dynamic> msg) {
-    final text = msg['text'] ?? '';
-    final status = msg['status'] ?? 'pending';
-    final statusText = status == 'sent' ? '전송됨' : '전송 중...';
-    final statusColor =
-        status == 'sent' ? const Color(0xFF4CAF50) : Colors.white.withAlpha(102);
+  Widget _buildChatBubble(Map<String, dynamic> msg) {
+    final ch = msg['ch'] ?? '기타';
+    final nick = msg['nick'] ?? '';
+    final text = msg['msg'] ?? '';
+    final type = msg['type'] ?? 0;
+    final color = channelColors[ch] ?? const Color(0xFF8892A8);
 
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8, left: 60),
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2A2A4E),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(14),
-            topRight: Radius.circular(14),
-            bottomLeft: Radius.circular(14),
-            bottomRight: Radius.circular(4),
-          ),
-          border: Border.all(color: const Color(0xFF3A3A5E)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(text,
-                style: const TextStyle(fontSize: 14, color: Colors.white)),
-            const SizedBox(height: 4),
-            Text(statusText,
-                style: TextStyle(fontSize: 10, color: statusColor)),
-          ],
-        ),
+    String displayMsg = text;
+    if (type == 3) {
+      final emote = msg['emote'];
+      displayMsg = emote != null ? '[이모티콘 #$emote]' : '[이모티콘]';
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF22223A),
+        borderRadius: BorderRadius.circular(8),
+        border: Border(left: BorderSide(color: color, width: 3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('[$ch] ', style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
+          if (nick.isNotEmpty) Text('$nick: ', style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600)),
+          Expanded(child: Text(displayMsg, style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(230)))),
+        ],
       ),
     );
   }

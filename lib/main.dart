@@ -7,7 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 
-const String appVersion = '0.1.9';
+const String appVersion = '0.2.0';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -636,6 +636,7 @@ class _UpdateDialog extends StatefulWidget {
 }
 
 class _UpdateDialogState extends State<_UpdateDialog> {
+  static const _installChannel = MethodChannel('com.zziktam.tam_mobile_studio/installer');
   double _progress = 0;
   bool _downloading = false;
   String _status = '';
@@ -644,11 +645,9 @@ class _UpdateDialogState extends State<_UpdateDialog> {
     setState(() { _downloading = true; _status = '다운로드 중...'; });
 
     try {
-      // Download to external cache (accessible to package installer)
       final dir = await getExternalStorageDirectory() ?? await getTemporaryDirectory();
       final filePath = '${dir.path}/tam-studio-update.apk';
 
-      // Delete old file if exists
       final oldFile = File(filePath);
       if (await oldFile.exists()) await oldFile.delete();
 
@@ -665,27 +664,22 @@ class _UpdateDialogState extends State<_UpdateDialog> {
         },
       );
 
-      // Verify file exists and has size
       final file = File(filePath);
       if (!await file.exists() || await file.length() < 1000000) {
         setState(() { _downloading = false; _status = '다운로드 실패'; });
         return;
       }
 
-      setState(() { _status = '설치 화면 열기...'; });
+      setState(() { _status = '설치 중...'; });
 
-      // Open APK using Android intent via url_launcher (file:// URI)
-      // Use platform channel approach - launch intent for APK install
-      final uri = Uri.parse('file://$filePath');
-      try {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } catch (_) {
-        // Fallback: open in browser
-        setState(() { _status = '브라우저에서 다운로드...'; });
-        await launchUrl(Uri.parse(widget.apkUrl), mode: LaunchMode.externalApplication);
-      }
+      // Call native Kotlin to install APK
+      await _installChannel.invokeMethod('installApk', {'filePath': filePath});
     } catch (e) {
-      setState(() { _downloading = false; _status = '오류 발생'; });
+      // Fallback: open in browser
+      setState(() { _status = '브라우저로 이동...'; });
+      try {
+        await launchUrl(Uri.parse(widget.apkUrl), mode: LaunchMode.externalApplication);
+      } catch (_) {}
     }
   }
 

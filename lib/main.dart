@@ -10,7 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 
-const String appVersion = '0.0.7';
+const String appVersion = '0.0.8';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,6 +57,7 @@ class _KeyGatePageState extends State<KeyGatePage> {
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     serverClientId: '178808646003-tfd34jpt7ps4c6neaa0j22mrukdkjqb7.apps.googleusercontent.com',
+    forceCodeForRefreshToken: true,
   );
 
   @override
@@ -112,6 +113,8 @@ class _KeyGatePageState extends State<KeyGatePage> {
     setState(() { _signingIn = true; _error = ''; });
 
     try {
+      // Sign out first to always show account picker
+      await _googleSignIn.signOut();
       final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         // User cancelled
@@ -300,8 +303,8 @@ class _BuffMonitorPageState extends State<BuffMonitorPage> {
       setState(() => _buffs = parsed);
     });
 
-    // Refresh UI every 200ms for smooth countdown timers
-    _refreshTimer = Timer.periodic(const Duration(milliseconds: 200), (_) {
+    // Refresh UI every 100ms for smooth countdown timers
+    _refreshTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
       if (_buffs.isNotEmpty && mounted) setState(() {});
     });
   }

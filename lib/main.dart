@@ -162,7 +162,7 @@ class _KeyGatePageState extends State<KeyGatePage> {
                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp('[a-zA-Z0-9]')), LengthLimitingTextInputFormatter(8)],
                 textCapitalization: TextCapitalization.characters,
                 decoration: InputDecoration(
-                  hintText: 'ABC123',
+                  hintText: 'ABCD1234',
                   hintStyle: TextStyle(color: Colors.white.withAlpha(51), letterSpacing: 8),
                   filled: true,
                   fillColor: const Color(0xFF22223A),
@@ -290,14 +290,13 @@ class _BuffMonitorPageState extends State<BuffMonitorPage> {
         setState(() => _buffs = []);
         return;
       }
+      List<Map<String, dynamic>> parsed = [];
       if (data is List) {
-        setState(() {
-          _buffs = data
-              .where((e) => e != null)
-              .map((e) => Map<String, dynamic>.from(e as Map))
-              .toList();
-        });
+        parsed = data.where((e) => e != null).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      } else if (data is Map) {
+        parsed = data.values.where((e) => e != null).map((e) => Map<String, dynamic>.from(e as Map)).toList();
       }
+      setState(() => _buffs = parsed);
     });
   }
 
@@ -431,10 +430,9 @@ class _DropTrackerPageState extends State<DropTrackerPage> {
           _elapsed = (data['elapsed'] ?? 0).toDouble();
           final rawItems = data['items'];
           if (rawItems is List) {
-            _items = rawItems
-                .where((e) => e != null)
-                .map((e) => Map<String, dynamic>.from(e as Map))
-                .toList();
+            _items = rawItems.where((e) => e != null).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          } else if (rawItems is Map) {
+            _items = rawItems.values.where((e) => e != null).map((e) => Map<String, dynamic>.from(e as Map)).toList();
           }
         });
       }

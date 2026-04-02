@@ -642,14 +642,19 @@ class _ChatSendPageState extends State<ChatSendPage> {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final userRef = FirebaseDatabase.instance.ref('users/${widget.userKey}');
 
-      // Write to chat_send for PC to pick up
+      // Create history entry first to get the key
+      final historyRef = userRef.child('chat_history').push();
+      final historyKey = historyRef.key ?? '';
+
+      // Write to chat_send for PC to pick up (includes historyKey for status update)
       await userRef.child('chat_send').set({
         'text': text,
         'timestamp': timestamp,
+        'historyKey': historyKey,
       });
 
       // Append to chat_history for display
-      await userRef.child('chat_history').push().set({
+      await historyRef.set({
         'text': text,
         'timestamp': timestamp,
         'status': 'pending',

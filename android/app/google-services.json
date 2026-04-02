@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "178808646003",
+    "firebase_url": "https://tam-studio-3df21-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "tam-studio-3df21",
+    "storage_bucket": "tam-studio-3df21.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:178808646003:android:3ab6b5f165bdf9b38d7d06",
+        "android_client_info": {
+          "package_name": "com.zziktam.tam_mobile_studio"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyChEj-uZ_cCnhmgjGewA7G-4uI3prXvCuM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

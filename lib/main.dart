@@ -4,9 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 
-const String appVersion = '0.1.7';
+const String appVersion = '0.1.8';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -635,12 +636,56 @@ class _UpdateDialog extends StatefulWidget {
 }
 
 class _UpdateDialogState extends State<_UpdateDialog> {
-  Future<void> _openDownload() async {
+  double _progress = 0;
+  bool _downloading = false;
+  String _status = '';
+
+  Future<void> _downloadAndInstall() async {
+    setState(() { _downloading = true; _status = '다운로드 중...'; });
+
     try {
-      await launchUrl(Uri.parse(widget.apkUrl), mode: LaunchMode.externalApplication);
-    } catch (_) {
-      // Fallback: try without mode
-      await launchUrl(Uri.parse(widget.apkUrl));
+      // Download to external cache (accessible to package installer)
+      final dir = await getExternalStorageDirectory() ?? await getTemporaryDirectory();
+      final filePath = '${dir.path}/tam-studio-update.apk';
+
+      // Delete old file if exists
+      final oldFile = File(filePath);
+      if (await oldFile.exists()) await oldFile.delete();
+
+      await Dio().download(
+        widget.apkUrl,
+        filePath,
+        onReceiveProgress: (received, total) {
+          if (total > 0) {
+            setState(() {
+              _progress = received / total;
+              _status = '${(received / 1024 / 1024).toStringAsFixed(1)} / ${(total / 1024 / 1024).toStringAsFixed(1)} MB';
+            });
+          }
+        },
+      );
+
+      // Verify file exists and has size
+      final file = File(filePath);
+      if (!await file.exists() || await file.length() < 1000000) {
+        setState(() { _downloading = false; _status = '다운로드 실패'; });
+        return;
+      }
+
+      setState(() { _status = '설치 화면 열기...'; });
+
+      // Open APK using Android intent via url_launcher (file:// URI)
+      // Use platform channel approach - launch intent for APK install
+      final uri = Uri.parse('file://$filePath');
+      try {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (_) {
+        // Fallback: open in browser
+        setState(() { _status = '브라우저에서 다운로드...'; });
+        await launchUrl(Uri.parse(widget.apkUrl), mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      setState(() { _downloading = false; _status = '오류 발생'; });
     }
   }
 
@@ -649,18 +694,31 @@ class _UpdateDialogState extends State<_UpdateDialog> {
     return AlertDialog(
       backgroundColor: const Color(0xFF22223A),
       title: const Text('업데이트 알림', style: TextStyle(color: Colors.white)),
-      content: Text('새 버전 ${widget.newVersion}이 있습니다.\n현재 버전: $appVersion',
-          style: TextStyle(color: Colors.white.withAlpha(200))),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('새 버전 ${widget.newVersion}\n현재 버전: $appVersion',
+              style: TextStyle(color: Colors.white.withAlpha(200))),
+          if (_downloading) ...[
+            const SizedBox(height: 16),
+            LinearProgressIndicator(value: _progress, color: const Color(0xFFA78BFA)),
+            const SizedBox(height: 8),
+            Text(_status, style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(128))),
+          ],
+        ],
+      ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('나중에', style: TextStyle(color: Colors.white.withAlpha(128))),
-        ),
-        ElevatedButton(
-          onPressed: _openDownload,
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFA78BFA)),
-          child: const Text('업데이트', style: TextStyle(color: Colors.white)),
-        ),
+        if (!_downloading)
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('나중에', style: TextStyle(color: Colors.white.withAlpha(128))),
+          ),
+        if (!_downloading)
+          ElevatedButton(
+            onPressed: _downloadAndInstall,
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFA78BFA)),
+            child: const Text('업데이트', style: TextStyle(color: Colors.white)),
+          ),
       ],
     );
   }

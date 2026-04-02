@@ -8,7 +8,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-const String appVersion = '0.1.2';
+const String appVersion = '0.1.3';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -662,7 +662,7 @@ class _UpdateDialogState extends State<_UpdateDialog> {
       );
 
       setState(() { _status = '설치 시작...'; });
-      await OpenFilex.open(filePath);
+      await OpenFilex.open(filePath, type: 'application/vnd.android.package-archive');
     } catch (e) {
       setState(() { _downloading = false; _status = '오류: $e'; });
     }

@@ -75,20 +75,28 @@ Output: `build/app/outputs/flutter-apk/app-release.apk`
 
 **Deploy (version update):**
 1. Update `appVersion` in `lib/main.dart`
-2. Build APK
-3. Upload to GitHub Releases: `gh release create vX.Y.Z app-release.apk#tam-studio.apk --title "vX.Y.Z"`
-4. Update Firebase version:
-   ```python
-   PUT /app_version.json
-   {"latest": "X.Y.Z", "apk_url": "https://github.com/ZZIKTAM/tam-mobile-studio/releases/download/vX.Y.Z/tam-studio.apk"}
+2. Build APK: `flutter build apk --release`
+3. **Rename APK** before upload: `cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/tam-studio.apk`
+4. Upload to GitHub Releases: `gh release create vX.Y.Z build/app/outputs/flutter-apk/tam-studio.apk --title "vX.Y.Z"`
+5. Update Firebase version:
+   ```bash
+   curl -X PUT "https://tam-studio-3df21-default-rtdb.asia-southeast1.firebasedatabase.app/app_version.json" \
+     -H "Content-Type: application/json" \
+     -d '{"latest":"X.Y.Z","apk_url":"https://github.com/ZZIKTAM/tam-mobile-studio/releases/download/vX.Y.Z/tam-studio.apk"}'
    ```
-5. Commit + push
+6. Commit + push
 
 **Rules:**
 - APK is NOT copied to desktop — uploaded to GitHub Releases only
 - `appVersion` in main.dart MUST match GitHub release tag
 - Firebase `app_version.latest` MUST match the release tag
 - First install is manual (share APK link), subsequent updates are automatic
+
+**Critical — past mistakes, DO NOT repeat:**
+- **APK filename MUST be `tam-studio.apk`** — Flutter outputs `app-release.apk`, but Firebase `apk_url` expects `tam-studio.apk`. MUST rename before uploading to GitHub Releases. `gh release create ... app-release.apk#tam-studio.apk` does NOT rename the file — it only sets a label. The actual download URL uses the original filename.
+- **Correct upload flow:** rename file first (`cp app-release.apk tam-studio.apk`), then `gh release create vX.Y.Z tam-studio.apk`
+- **Verify after upload:** run `gh release view vX.Y.Z` and confirm `asset: tam-studio.apk` (not `app-release.apk`)
+- **Version bump BEFORE build** — update `appVersion` in `main.dart` first, then build. If you build first and bump after, the APK contains the old version string.
 
 ## Auto-Update System
 

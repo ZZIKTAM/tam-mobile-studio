@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,7 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 
-const String appVersion = '0.0.4';
+const String appVersion = '0.0.5';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -279,6 +280,7 @@ class BuffMonitorPage extends StatefulWidget {
 
 class _BuffMonitorPageState extends State<BuffMonitorPage> {
   List<Map<String, dynamic>> _buffs = [];
+  Timer? _refreshTimer;
 
   @override
   void initState() {
@@ -298,6 +300,17 @@ class _BuffMonitorPageState extends State<BuffMonitorPage> {
       }
       setState(() => _buffs = parsed);
     });
+
+    // Refresh UI every second for countdown timers
+    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_buffs.isNotEmpty && mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   @override

@@ -45,22 +45,23 @@ tam-mobile-studio/
 - `google-services.json` is committed (not sensitive for Realtime DB)
 - Security rules: test mode (open read/write) — tighten before public release
 
-## User Key Authentication
+## Authentication (Google Sign-In)
 
-- PC app generates 6-char alphanumeric key (no 0/O/1/I to avoid confusion)
-- Key stored in PC's UserSettings (`firebase_user_key`)
-- Mobile app: first launch → enter key → saved locally (`user_key.txt`)
-- All Firebase paths are per-user: `users/{key}/...`
-- Settings page allows disconnect + re-enter key
+- Both PC and mobile use **Google OAuth** → same Google account → same Firebase UID
+- Firebase path: `users/{firebase_uid}/...`
+- **First login:** account picker always shown (signOut before signIn)
+- **Subsequent launches:** auto sign-in via `FirebaseAuth.instance.currentUser`
+- **Logout:** Google signOut + Firebase signOut → requires re-login
+- **Web client ID (serverClientId):** `178808646003-tfd34jpt7ps4c6neaa0j22mrukdkjqb7.apps.googleusercontent.com`
 
 ## App Pages
 
 | Page | Description |
 |------|-------------|
-| KeyGatePage | First launch key input |
-| BuffMonitorPage | Real-time buff list with countdown timers |
-| DropTrackerPage | Drop accumulation with elapsed time |
-| SettingsPage | Key display, disconnect, app version |
+| KeyGatePage | Google Sign-In login screen |
+| BuffMonitorPage | Real-time buff list with countdown timers (100ms refresh) |
+| DropTrackerPage | Drop accumulation with real-time elapsed time |
+| SettingsPage | Google account info, disconnect, app version |
 
 ## Build & Deploy
 

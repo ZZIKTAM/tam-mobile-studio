@@ -8,7 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 
-const String appVersion = '0.0.5';
+const String appVersion = '0.0.6';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -301,8 +301,8 @@ class _BuffMonitorPageState extends State<BuffMonitorPage> {
       setState(() => _buffs = parsed);
     });
 
-    // Refresh UI every second for countdown timers
-    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+    // Refresh UI every 200ms for smooth countdown timers
+    _refreshTimer = Timer.periodic(const Duration(milliseconds: 200), (_) {
       if (_buffs.isNotEmpty && mounted) setState(() {});
     });
   }
@@ -428,11 +428,24 @@ class DropTrackerPage extends StatefulWidget {
 class _DropTrackerPageState extends State<DropTrackerPage> {
   bool _measuring = false;
   double _elapsed = 0;
+  double _lastServerElapsed = 0;
+  DateTime _lastServerTime = DateTime.now();
   List<Map<String, dynamic>> _items = [];
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
+
+    // Refresh elapsed time locally every second
+    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_measuring && mounted) {
+        setState(() {
+          _elapsed = _lastServerElapsed + DateTime.now().difference(_lastServerTime).inMilliseconds / 1000.0;
+        });
+      }
+    });
+
     final ref = FirebaseDatabase.instance.ref('users/${widget.userKey}/drops');
     ref.onValue.listen((event) {
       final data = event.snapshot.value;
@@ -440,7 +453,9 @@ class _DropTrackerPageState extends State<DropTrackerPage> {
       if (data is Map) {
         setState(() {
           _measuring = data['measuring'] == true;
-          _elapsed = (data['elapsed'] ?? 0).toDouble();
+          _lastServerElapsed = (data['elapsed'] ?? 0).toDouble();
+          _lastServerTime = DateTime.now();
+          _elapsed = _lastServerElapsed;
           final rawItems = data['items'];
           if (rawItems is List) {
             _items = rawItems.where((e) => e != null).map((e) => Map<String, dynamic>.from(e as Map)).toList();
@@ -450,6 +465,12 @@ class _DropTrackerPageState extends State<DropTrackerPage> {
         });
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   String _formatElapsed(double seconds) {

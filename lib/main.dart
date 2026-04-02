@@ -7,7 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 
-const String appVersion = '0.0.2';
+const String appVersion = '0.0.3';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -56,6 +56,25 @@ class _KeyGatePageState extends State<KeyGatePage> {
   void initState() {
     super.initState();
     _loadKey();
+    _checkForUpdate();
+  }
+
+  Future<void> _checkForUpdate() async {
+    try {
+      final snapshot = await FirebaseDatabase.instance.ref('app_version').get();
+      if (!snapshot.exists) return;
+      final data = Map<String, dynamic>.from(snapshot.value as Map);
+      final latest = data['latest'] as String? ?? '';
+      final apkUrl = data['apk_url'] as String? ?? '';
+      if (latest.isEmpty || apkUrl.isEmpty) return;
+      if (latest != appVersion && mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => _UpdateDialog(newVersion: latest, apkUrl: apkUrl),
+        );
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadKey() async {
@@ -140,7 +159,7 @@ class _KeyGatePageState extends State<KeyGatePage> {
                 controller: _controller,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 8, color: Colors.white),
-                inputFormatters: [FilteringTextInputFormatter.allow(RegExp('[a-zA-Z0-9]')), LengthLimitingTextInputFormatter(6)],
+                inputFormatters: [FilteringTextInputFormatter.allow(RegExp('[a-zA-Z0-9]')), LengthLimitingTextInputFormatter(8)],
                 textCapitalization: TextCapitalization.characters,
                 decoration: InputDecoration(
                   hintText: 'ABC123',

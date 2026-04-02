@@ -6,7 +6,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:path_provider/path_provider.dart';
 
-const String appVersion = '0.1.5';
+const String appVersion = '0.1.6';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -636,9 +636,11 @@ class _UpdateDialog extends StatefulWidget {
 
 class _UpdateDialogState extends State<_UpdateDialog> {
   Future<void> _openDownload() async {
-    final uri = Uri.parse(widget.apkUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    try {
+      await launchUrl(Uri.parse(widget.apkUrl), mode: LaunchMode.externalApplication);
+    } catch (_) {
+      // Fallback: try without mode
+      await launchUrl(Uri.parse(widget.apkUrl));
     }
   }
 

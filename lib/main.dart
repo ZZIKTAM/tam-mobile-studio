@@ -3,12 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:dio/dio.dart';
-import 'package:open_filex/open_filex.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
-const String appVersion = '0.1.3';
+const String appVersion = '0.1.4';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -637,34 +635,10 @@ class _UpdateDialog extends StatefulWidget {
 }
 
 class _UpdateDialogState extends State<_UpdateDialog> {
-  double _progress = 0;
-  bool _downloading = false;
-  String _status = '';
-
-  Future<void> _downloadAndInstall() async {
-    setState(() { _downloading = true; _status = '다운로드 중...'; });
-
-    try {
-      final dir = await getTemporaryDirectory();
-      final filePath = '${dir.path}/tam-studio-update.apk';
-
-      await Dio().download(
-        widget.apkUrl,
-        filePath,
-        onReceiveProgress: (received, total) {
-          if (total > 0) {
-            setState(() {
-              _progress = received / total;
-              _status = '${(received / 1024 / 1024).toStringAsFixed(1)}MB / ${(total / 1024 / 1024).toStringAsFixed(1)}MB';
-            });
-          }
-        },
-      );
-
-      setState(() { _status = '설치 시작...'; });
-      await OpenFilex.open(filePath, type: 'application/vnd.android.package-archive');
-    } catch (e) {
-      setState(() { _downloading = false; _status = '오류: $e'; });
+  Future<void> _openDownload() async {
+    final uri = Uri.parse(widget.apkUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
@@ -673,31 +647,18 @@ class _UpdateDialogState extends State<_UpdateDialog> {
     return AlertDialog(
       backgroundColor: const Color(0xFF22223A),
       title: const Text('업데이트 알림', style: TextStyle(color: Colors.white)),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('새 버전 ${widget.newVersion}이 있습니다.\n현재 버전: $appVersion',
-              style: TextStyle(color: Colors.white.withAlpha(200))),
-          if (_downloading) ...[
-            const SizedBox(height: 16),
-            LinearProgressIndicator(value: _progress, color: const Color(0xFFA78BFA)),
-            const SizedBox(height: 8),
-            Text(_status, style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(128))),
-          ],
-        ],
-      ),
+      content: Text('새 버전 ${widget.newVersion}이 있습니다.\n현재 버전: $appVersion',
+          style: TextStyle(color: Colors.white.withAlpha(200))),
       actions: [
-        if (!_downloading)
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('나중에', style: TextStyle(color: Colors.white.withAlpha(128))),
-          ),
-        if (!_downloading)
-          ElevatedButton(
-            onPressed: _downloadAndInstall,
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFA78BFA)),
-            child: const Text('업데이트', style: TextStyle(color: Colors.white)),
-          ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('나중에', style: TextStyle(color: Colors.white.withAlpha(128))),
+        ),
+        ElevatedButton(
+          onPressed: _openDownload,
+          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFA78BFA)),
+          child: const Text('업데이트', style: TextStyle(color: Colors.white)),
+        ),
       ],
     );
   }

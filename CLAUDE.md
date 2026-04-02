@@ -1,0 +1,110 @@
+# tam-mobile-studio Project Rules
+
+BPSR 모바일 컴패니언 앱. PC 앱(tam-bpsr-studio)에서 Firebase를 통해 데이터를 수신하여 표시.
+
+## Project Structure
+
+Repository: `tam-mobile-studio` (GitHub: ZZIKTAM/tam-mobile-studio, private)
+
+```
+tam-mobile-studio/
+├── lib/
+│   └── main.dart             <- 전체 앱 코드 (단일 파일)
+├── android/
+│   ├── app/
+│   │   ├── build.gradle.kts
+│   │   ├── google-services.json  <- Firebase config (committed)
+│   │   └── src/main/AndroidManifest.xml
+│   └── build.gradle.kts
+├── pubspec.yaml              <- Flutter 의존성
+├── CLAUDE.md                 <- This file
+└── README.md
+```
+
+## Tech Stack
+
+| Item | Version |
+|------|---------|
+| Flutter | 3.29.3 (C:\flutter\flutter\) |
+| Dart | 3.7.2 |
+| Android SDK | API 34 (C:\android-sdk\) |
+| JDK | Microsoft OpenJDK 17 (C:\Program Files\Microsoft\jdk-17.0.18.8-hotspot\) |
+| Firebase | Realtime Database |
+| Target | Android only (iOS planned) |
+
+## Firebase
+
+- **Project:** tam-studio (Google Cloud)
+- **Realtime DB URL:** `https://tam-studio-3df21-default-rtdb.asia-southeast1.firebasedatabase.app/`
+- **Data structure:**
+  ```
+  /users/{userKey}/buffs    <- PC writes, mobile reads
+  /users/{userKey}/drops    <- PC writes, mobile reads
+  /app_version              <- latest version info for auto-update
+  ```
+- `google-services.json` is committed (not sensitive for Realtime DB)
+- Security rules: test mode (open read/write) — tighten before public release
+
+## User Key Authentication
+
+- PC app generates 6-char alphanumeric key (no 0/O/1/I to avoid confusion)
+- Key stored in PC's UserSettings (`firebase_user_key`)
+- Mobile app: first launch → enter key → saved locally (`user_key.txt`)
+- All Firebase paths are per-user: `users/{key}/...`
+- Settings page allows disconnect + re-enter key
+
+## App Pages
+
+| Page | Description |
+|------|-------------|
+| KeyGatePage | First launch key input |
+| BuffMonitorPage | Real-time buff list with countdown timers |
+| DropTrackerPage | Drop accumulation with elapsed time |
+| SettingsPage | Key display, disconnect, app version |
+
+## Build & Deploy
+
+**Build APK:**
+```bash
+export ANDROID_HOME="C:/android-sdk"
+export JAVA_HOME="C:/Program Files/Microsoft/jdk-17.0.18.8-hotspot"
+cd tam-mobile-studio
+flutter build apk --release
+```
+Output: `build/app/outputs/flutter-apk/app-release.apk`
+
+**Deploy (version update):**
+1. Update `appVersion` in `lib/main.dart`
+2. Build APK
+3. Upload to GitHub Releases: `gh release create vX.Y.Z app-release.apk#tam-studio.apk --title "vX.Y.Z"`
+4. Update Firebase version:
+   ```python
+   PUT /app_version.json
+   {"latest": "X.Y.Z", "apk_url": "https://github.com/ZZIKTAM/tam-mobile-studio/releases/download/vX.Y.Z/tam-studio.apk"}
+   ```
+5. Commit + push
+
+**Rules:**
+- APK is NOT copied to desktop — uploaded to GitHub Releases only
+- `appVersion` in main.dart MUST match GitHub release tag
+- Firebase `app_version.latest` MUST match the release tag
+- First install is manual (share APK link), subsequent updates are automatic
+
+## Auto-Update System
+
+- App checks Firebase `/app_version` on startup
+- If `latest` != `appVersion` → show update dialog
+- "업데이트" button → download APK from `apk_url` → open installer
+- User taps "설치" (Android requirement) → update complete
+- `open_filex` package handles APK installation with correct mime type
+
+## Related Repositories
+
+- `tam-bpsr-studio` — PC app (WPF, C#) that captures game data and sends to Firebase
+- `tam-autodesk-studio` — Autodesk plugins (separate project)
+
+## Language
+
+- User communicates in Korean
+- Code comments and commit messages in English
+- CLAUDE.md in English

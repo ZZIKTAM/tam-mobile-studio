@@ -7,7 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 
-const String appVersion = '0.0.1';
+const String appVersion = '0.0.2';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,15 +59,20 @@ class _KeyGatePageState extends State<KeyGatePage> {
   }
 
   Future<void> _loadKey() async {
-    // Simple local storage via Firebase — check if key was saved before
-    // Using a local file for persistence
     try {
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/user_key.txt');
       if (await file.exists()) {
         final key = await file.readAsString();
         if (key.trim().isNotEmpty) {
-          setState(() => _savedKey = key.trim());
+          // Verify key still exists in Firebase (PC might have restarted with new key)
+          final snapshot = await FirebaseDatabase.instance.ref('users/${key.trim()}').get();
+          if (snapshot.exists) {
+            setState(() => _savedKey = key.trim());
+            return;
+          }
+          // Key expired — delete and show input
+          await file.delete();
         }
       }
     } catch (_) {}
@@ -84,11 +89,12 @@ class _KeyGatePageState extends State<KeyGatePage> {
     try {
       final snapshot = await FirebaseDatabase.instance.ref('users/$key').get();
       if (!snapshot.exists) {
-        setState(() => _error = '유효하지 않은 키입니다. PC 앱에서 확인하세요.');
+        setState(() => _error = 'PC 앱이 실행 중인지 확인하세요.');
         return;
       }
     } catch (e) {
-      // If can't verify, still save (might not have data yet)
+      setState(() => _error = '연결 실패. 네트워크를 확인하세요.');
+      return;
     }
 
     // Save locally

@@ -64,6 +64,26 @@ tam-mobile-studio/
 
 ## Build & Deploy
 
+**Release Signing (required on every build machine):**
+
+APK must be signed with the same release key across all machines. Without this, users get "패키지가 기존 패키지와 충돌" error and must uninstall first.
+
+1. Copy `upload-keystore.jks` to `android/app/upload-keystore.jks` (NOT committed to git — transfer manually)
+2. Create `android/key.properties`:
+   ```
+   storePassword=tamstudio2026
+   keyPassword=tamstudio2026
+   keyAlias=upload
+   storeFile=upload-keystore.jks
+   ```
+3. `build.gradle.kts` already configured to read `key.properties` (committed)
+
+**Key files (NOT in git, must be copied manually between machines):**
+- `android/key.properties` — signing passwords
+- `android/app/upload-keystore.jks` — release keystore (2048-bit RSA, valid 10000 days)
+
+**If keystore is lost:** all users must uninstall and reinstall. NEVER lose the keystore.
+
 **Build APK:**
 ```bash
 export ANDROID_HOME="C:/android-sdk"

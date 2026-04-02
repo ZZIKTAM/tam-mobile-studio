@@ -7,7 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 
-const String appVersion = '0.1.8';
+const String appVersion = '0.1.9';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

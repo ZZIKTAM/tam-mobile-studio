@@ -6,7 +6,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:path_provider/path_provider.dart';
 
-const String appVersion = '0.1.6';
+const String appVersion = '0.1.7';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

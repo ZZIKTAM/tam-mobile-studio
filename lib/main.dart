@@ -10,7 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 
-const String appVersion = '0.0.8';
+const String appVersion = '0.0.9';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -251,6 +251,7 @@ class _HomePageState extends State<HomePage> {
       body: [
         BuffMonitorPage(userKey: widget.userKey),
         DropTrackerPage(userKey: widget.userKey),
+        ChatSendPage(userKey: widget.userKey),
         SettingsPage(userKey: widget.userKey, onDisconnect: _onDisconnect),
       ][_currentTab],
       bottomNavigationBar: NavigationBar(
@@ -261,6 +262,7 @@ class _HomePageState extends State<HomePage> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.shield), label: '버프'),
           NavigationDestination(icon: Icon(Icons.card_giftcard), label: '드랍'),
+          NavigationDestination(icon: Icon(Icons.chat), label: '채팅'),
           NavigationDestination(icon: Icon(Icons.settings), label: '설정'),
         ],
       ),
@@ -564,6 +566,226 @@ class _DropTrackerPageState extends State<DropTrackerPage> {
               style: const TextStyle(
                   fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFFA78BFA))),
         ],
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════
+//  Chat Send Page
+// ══════════════════════════════════════
+
+class ChatSendPage extends StatefulWidget {
+  final String userKey;
+  const ChatSendPage({super.key, required this.userKey});
+
+  @override
+  State<ChatSendPage> createState() => _ChatSendPageState();
+}
+
+class _ChatSendPageState extends State<ChatSendPage> {
+  final TextEditingController _textController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  List<Map<String, dynamic>> _messages = [];
+  bool _sending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final ref = FirebaseDatabase.instance
+        .ref('users/${widget.userKey}/chat_history')
+        .orderByChild('timestamp')
+        .limitToLast(50);
+    ref.onValue.listen((event) {
+      final data = event.snapshot.value;
+      if (data == null) {
+        setState(() => _messages = []);
+        return;
+      }
+      List<Map<String, dynamic>> parsed = [];
+      if (data is Map) {
+        data.forEach((key, value) {
+          if (value != null) {
+            final msg = Map<String, dynamic>.from(value as Map);
+            msg['_key'] = key;
+            parsed.add(msg);
+          }
+        });
+      }
+      parsed.sort((a, b) =>
+          (a['timestamp'] as num? ?? 0).compareTo(b['timestamp'] as num? ?? 0));
+      setState(() => _messages = parsed);
+      _scrollToBottom();
+    });
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _textController.text.trim();
+    if (text.isEmpty || _sending) return;
+
+    setState(() => _sending = true);
+    _textController.clear();
+
+    try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final userRef = FirebaseDatabase.instance.ref('users/${widget.userKey}');
+
+      // Write to chat_send for PC to pick up
+      await userRef.child('chat_send').set({
+        'text': text,
+        'timestamp': timestamp,
+      });
+
+      // Append to chat_history for display
+      await userRef.child('chat_history').push().set({
+        'text': text,
+        'timestamp': timestamp,
+        'status': 'pending',
+      });
+    } catch (_) {}
+
+    setState(() => _sending = false);
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const Icon(Icons.chat, color: Color(0xFFA78BFA), size: 24),
+                const SizedBox(width: 8),
+                const Text('채팅 전송',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white)),
+                const Spacer(),
+                Text('${_messages.length}개',
+                    style:
+                        TextStyle(fontSize: 12, color: Colors.white.withAlpha(128))),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _messages.isEmpty
+                ? Center(
+                    child: Text('메시지 없음\n아래에서 채팅을 입력하세요',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white.withAlpha(77))))
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    itemCount: _messages.length,
+                    itemBuilder: (ctx, i) => _buildMessageBubble(_messages[i]),
+                  ),
+          ),
+          Container(
+            padding: const EdgeInsets.fromLTRB(12, 8, 8, 12),
+            decoration: const BoxDecoration(
+              color: Color(0xFF16162A),
+              border: Border(top: BorderSide(color: Color(0xFF333355))),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _textController,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: '메시지를 입력하세요...',
+                      hintStyle: TextStyle(color: Colors.white.withAlpha(77)),
+                      filled: true,
+                      fillColor: const Color(0xFF22223A),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _sendMessage(),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                IconButton(
+                  onPressed: _sending ? null : _sendMessage,
+                  icon: _sending
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Color(0xFFA78BFA)))
+                      : const Icon(Icons.arrow_upward,
+                          color: Color(0xFFA78BFA)),
+                  style: IconButton.styleFrom(
+                    backgroundColor: const Color(0xFF22223A),
+                    shape: const CircleBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessageBubble(Map<String, dynamic> msg) {
+    final text = msg['text'] ?? '';
+    final status = msg['status'] ?? 'pending';
+    final statusText = status == 'sent' ? '전송됨' : '전송 중...';
+    final statusColor =
+        status == 'sent' ? const Color(0xFF4CAF50) : Colors.white.withAlpha(102);
+
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8, left: 60),
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2A2A4E),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(14),
+            topRight: Radius.circular(14),
+            bottomLeft: Radius.circular(14),
+            bottomRight: Radius.circular(4),
+          ),
+          border: Border.all(color: const Color(0xFF3A3A5E)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(text,
+                style: const TextStyle(fontSize: 14, color: Colors.white)),
+            const SizedBox(height: 4),
+            Text(statusText,
+                style: TextStyle(fontSize: 10, color: statusColor)),
+          ],
+        ),
       ),
     );
   }

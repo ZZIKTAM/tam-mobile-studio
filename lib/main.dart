@@ -1,6 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:dio/dio.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
+const String appVersion = '0.1.1';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,13 +32,148 @@ class TamStudioApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFF1A1A2E),
         useMaterial3: true,
       ),
-      home: const HomePage(),
+      home: const KeyGatePage(),
+    );
+  }
+}
+
+// ══════════════════════════════════════
+//  Key Gate — enter user key on first launch
+// ══════════════════════════════════════
+
+class KeyGatePage extends StatefulWidget {
+  const KeyGatePage({super.key});
+
+  @override
+  State<KeyGatePage> createState() => _KeyGatePageState();
+}
+
+class _KeyGatePageState extends State<KeyGatePage> {
+  String? _savedKey;
+  final _controller = TextEditingController();
+  String _error = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadKey();
+  }
+
+  Future<void> _loadKey() async {
+    // Simple local storage via Firebase — check if key was saved before
+    // Using a local file for persistence
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/user_key.txt');
+      if (await file.exists()) {
+        final key = await file.readAsString();
+        if (key.trim().isNotEmpty) {
+          setState(() => _savedKey = key.trim());
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveAndConnect() async {
+    final key = _controller.text.trim().toUpperCase();
+    if (key.length < 4) {
+      setState(() => _error = '키를 입력하세요');
+      return;
+    }
+
+    // Verify key exists in Firebase
+    try {
+      final snapshot = await FirebaseDatabase.instance.ref('users/$key').get();
+      if (!snapshot.exists) {
+        setState(() => _error = '유효하지 않은 키입니다. PC 앱에서 확인하세요.');
+        return;
+      }
+    } catch (e) {
+      // If can't verify, still save (might not have data yet)
+    }
+
+    // Save locally
+    final dir = await getApplicationDocumentsDirectory();
+    await File('${dir.path}/user_key.txt').writeAsString(key);
+    setState(() => _savedKey = key);
+  }
+
+  void _disconnect() async {
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File('${dir.path}/user_key.txt');
+    if (await file.exists()) await file.delete();
+    setState(() { _savedKey = null; _controller.clear(); _error = ''; });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_savedKey != null) {
+      return HomePage(userKey: _savedKey!);
+    }
+
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 70, height: 70,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFA78BFA),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Center(child: Text('🎮', style: TextStyle(fontSize: 36))),
+              ),
+              const SizedBox(height: 20),
+              const Text('Tam Studio', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+              const SizedBox(height: 8),
+              Text('PC 앱에 표시된 연동 키를 입력하세요', style: TextStyle(fontSize: 13, color: Colors.white.withAlpha(128))),
+              const SizedBox(height: 32),
+              TextField(
+                controller: _controller,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 8, color: Colors.white),
+                inputFormatters: [FilteringTextInputFormatter.allow(RegExp('[a-zA-Z0-9]')), LengthLimitingTextInputFormatter(6)],
+                textCapitalization: TextCapitalization.characters,
+                decoration: InputDecoration(
+                  hintText: 'ABC123',
+                  hintStyle: TextStyle(color: Colors.white.withAlpha(51), letterSpacing: 8),
+                  filled: true,
+                  fillColor: const Color(0xFF22223A),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF333355))),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF333355))),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFA78BFA))),
+                ),
+              ),
+              if (_error.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(_error, style: const TextStyle(fontSize: 12, color: Color(0xFFF44336))),
+              ],
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity, height: 48,
+                child: ElevatedButton(
+                  onPressed: _saveAndConnect,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFA78BFA),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('연동하기', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final String userKey;
+  const HomePage({super.key, required this.userKey});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -40,11 +183,39 @@ class _HomePageState extends State<HomePage> {
   int _currentTab = 0;
 
   @override
+  void initState() {
+    super.initState();
+    _checkForUpdate();
+  }
+
+  Future<void> _checkForUpdate() async {
+    try {
+      final snapshot = await FirebaseDatabase.instance.ref('app_version').get();
+      if (!snapshot.exists) return;
+      final data = Map<String, dynamic>.from(snapshot.value as Map);
+      final latest = data['latest'] as String? ?? '';
+      final apkUrl = data['apk_url'] as String? ?? '';
+      if (latest.isEmpty || apkUrl.isEmpty) return;
+      if (latest != appVersion && mounted) {
+        _showUpdateDialog(latest, apkUrl);
+      }
+    } catch (_) {}
+  }
+
+  void _showUpdateDialog(String newVersion, String apkUrl) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => _UpdateDialog(newVersion: newVersion, apkUrl: apkUrl),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: [
-        const BuffMonitorPage(),
-        const DropTrackerPage(),
+        BuffMonitorPage(userKey: widget.userKey),
+        DropTrackerPage(userKey: widget.userKey),
       ][_currentTab],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentTab,
@@ -65,7 +236,8 @@ class _HomePageState extends State<HomePage> {
 // ══════════════════════════════════════
 
 class BuffMonitorPage extends StatefulWidget {
-  const BuffMonitorPage({super.key});
+  final String userKey;
+  const BuffMonitorPage({super.key, required this.userKey});
 
   @override
   State<BuffMonitorPage> createState() => _BuffMonitorPageState();
@@ -77,7 +249,7 @@ class _BuffMonitorPageState extends State<BuffMonitorPage> {
   @override
   void initState() {
     super.initState();
-    final ref = FirebaseDatabase.instance.ref('buffs');
+    final ref = FirebaseDatabase.instance.ref('users/${widget.userKey}/buffs');
     ref.onValue.listen((event) {
       final data = event.snapshot.value;
       if (data == null) {
@@ -200,7 +372,8 @@ class _BuffMonitorPageState extends State<BuffMonitorPage> {
 // ══════════════════════════════════════
 
 class DropTrackerPage extends StatefulWidget {
-  const DropTrackerPage({super.key});
+  final String userKey;
+  const DropTrackerPage({super.key, required this.userKey});
 
   @override
   State<DropTrackerPage> createState() => _DropTrackerPageState();
@@ -214,7 +387,7 @@ class _DropTrackerPageState extends State<DropTrackerPage> {
   @override
   void initState() {
     super.initState();
-    final ref = FirebaseDatabase.instance.ref('drops');
+    final ref = FirebaseDatabase.instance.ref('users/${widget.userKey}/drops');
     ref.onValue.listen((event) {
       final data = event.snapshot.value;
       if (data == null) return;
@@ -324,6 +497,86 @@ class _DropTrackerPageState extends State<DropTrackerPage> {
                   fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFFA78BFA))),
         ],
       ),
+    );
+  }
+}
+
+// ══════════════════════════════════════
+//  Auto Update Dialog
+// ══════════════════════════════════════
+
+class _UpdateDialog extends StatefulWidget {
+  final String newVersion;
+  final String apkUrl;
+  const _UpdateDialog({required this.newVersion, required this.apkUrl});
+
+  @override
+  State<_UpdateDialog> createState() => _UpdateDialogState();
+}
+
+class _UpdateDialogState extends State<_UpdateDialog> {
+  double _progress = 0;
+  bool _downloading = false;
+  String _status = '';
+
+  Future<void> _downloadAndInstall() async {
+    setState(() { _downloading = true; _status = '다운로드 중...'; });
+
+    try {
+      final dir = await getTemporaryDirectory();
+      final filePath = '${dir.path}/tam-studio-update.apk';
+
+      await Dio().download(
+        widget.apkUrl,
+        filePath,
+        onReceiveProgress: (received, total) {
+          if (total > 0) {
+            setState(() {
+              _progress = received / total;
+              _status = '${(received / 1024 / 1024).toStringAsFixed(1)}MB / ${(total / 1024 / 1024).toStringAsFixed(1)}MB';
+            });
+          }
+        },
+      );
+
+      setState(() { _status = '설치 시작...'; });
+      await OpenFilex.open(filePath);
+    } catch (e) {
+      setState(() { _downloading = false; _status = '오류: $e'; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: const Color(0xFF22223A),
+      title: const Text('업데이트 알림', style: TextStyle(color: Colors.white)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('새 버전 ${widget.newVersion}이 있습니다.\n현재 버전: $appVersion',
+              style: TextStyle(color: Colors.white.withAlpha(200))),
+          if (_downloading) ...[
+            const SizedBox(height: 16),
+            LinearProgressIndicator(value: _progress, color: const Color(0xFFA78BFA)),
+            const SizedBox(height: 8),
+            Text(_status, style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(128))),
+          ],
+        ],
+      ),
+      actions: [
+        if (!_downloading)
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('나중에', style: TextStyle(color: Colors.white.withAlpha(128))),
+          ),
+        if (!_downloading)
+          ElevatedButton(
+            onPressed: _downloadAndInstall,
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFA78BFA)),
+            child: const Text('업데이트', style: TextStyle(color: Colors.white)),
+          ),
+      ],
     );
   }
 }

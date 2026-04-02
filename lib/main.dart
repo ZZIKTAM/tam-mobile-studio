@@ -8,7 +8,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-const String appVersion = '0.1.1';
+const String appVersion = '0.1.2';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -188,6 +188,14 @@ class _HomePageState extends State<HomePage> {
     _checkForUpdate();
   }
 
+  void _onDisconnect() {
+    // Navigate back to KeyGatePage
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const KeyGatePage()),
+      (_) => false,
+    );
+  }
+
   Future<void> _checkForUpdate() async {
     try {
       final snapshot = await FirebaseDatabase.instance.ref('app_version').get();
@@ -216,6 +224,7 @@ class _HomePageState extends State<HomePage> {
       body: [
         BuffMonitorPage(userKey: widget.userKey),
         DropTrackerPage(userKey: widget.userKey),
+        SettingsPage(userKey: widget.userKey, onDisconnect: _onDisconnect),
       ][_currentTab],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentTab,
@@ -225,6 +234,7 @@ class _HomePageState extends State<HomePage> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.shield), label: '버프'),
           NavigationDestination(icon: Icon(Icons.card_giftcard), label: '드랍'),
+          NavigationDestination(icon: Icon(Icons.settings), label: '설정'),
         ],
       ),
     );
@@ -496,6 +506,118 @@ class _DropTrackerPageState extends State<DropTrackerPage> {
               style: const TextStyle(
                   fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFFA78BFA))),
         ],
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════
+//  Settings Page
+// ══════════════════════════════════════
+
+class SettingsPage extends StatelessWidget {
+  final String userKey;
+  final VoidCallback onDisconnect;
+  const SettingsPage({super.key, required this.userKey, required this.onDisconnect});
+
+  Future<void> _disconnectKey(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF22223A),
+        title: const Text('연동 해제', style: TextStyle(color: Colors.white)),
+        content: const Text('연동을 해제하면 새 키를 입력해야 합니다.', style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF44336)),
+            child: const Text('해제', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File('${dir.path}/user_key.txt');
+    if (await file.exists()) await file.delete();
+    onDisconnect();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.settings, color: Color(0xFFA78BFA), size: 24),
+                SizedBox(width: 8),
+                Text('설정', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Connection info
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF22223A),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF333355)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('연동 키', style: TextStyle(fontSize: 11, color: Colors.white.withAlpha(128))),
+                  const SizedBox(height: 8),
+                  Text(userKey, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'monospace', letterSpacing: 6)),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFF4CAF50), shape: BoxShape.circle)),
+                      const SizedBox(width: 6),
+                      Text('연동 중', style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(179))),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Disconnect button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => _disconnectKey(context),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFF555555)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text('연동 해제 (키 변경)', style: TextStyle(fontSize: 13, color: Color(0xFFEF5350))),
+              ),
+            ),
+
+            const Spacer(),
+
+            // App info
+            Center(
+              child: Column(
+                children: [
+                  Text('Tam Studio Mobile', style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(128))),
+                  const SizedBox(height: 4),
+                  Text('v$appVersion', style: TextStyle(fontSize: 11, color: Colors.white.withAlpha(77))),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

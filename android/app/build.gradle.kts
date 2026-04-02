@@ -40,7 +40,7 @@ android {
 
     defaultConfig {
         applicationId = "com.zziktam.tam_mobile_studio"
-        minSdk = flutter.minSdkVersion
+        minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

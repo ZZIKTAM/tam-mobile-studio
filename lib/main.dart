@@ -3,12 +3,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 
-const String appVersion = '0.0.6';
+const String appVersion = '0.0.7';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,13 +52,17 @@ class KeyGatePage extends StatefulWidget {
 
 class _KeyGatePageState extends State<KeyGatePage> {
   String? _savedKey;
-  final _controller = TextEditingController();
   String _error = '';
+  bool _signingIn = false;
+
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: '178808646003-tfd34jpt7ps4c6neaa0j22mrukdkjqb7.apps.googleusercontent.com',
+  );
 
   @override
   void initState() {
     super.initState();
-    _loadKey();
+    _checkExistingAuth();
     _checkForUpdate();
   }
 
@@ -78,56 +84,60 @@ class _KeyGatePageState extends State<KeyGatePage> {
     } catch (_) {}
   }
 
-  Future<void> _loadKey() async {
+  Future<void> _checkExistingAuth() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      // Save UID locally for consistency
+      final dir = await getApplicationDocumentsDirectory();
+      await File('${dir.path}/user_key.txt').writeAsString(user.uid);
+      setState(() => _savedKey = user.uid);
+      return;
+    }
+
+    // Fallback: check saved UID file
     try {
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/user_key.txt');
       if (await file.exists()) {
         final key = await file.readAsString();
         if (key.trim().isNotEmpty) {
-          // Verify key still exists in Firebase (PC might have restarted with new key)
-          final snapshot = await FirebaseDatabase.instance.ref('users/${key.trim()}').get();
-          if (snapshot.exists) {
-            setState(() => _savedKey = key.trim());
-            return;
-          }
-          // Key expired — delete and show input
+          // UID saved but not signed in — clear it, require re-sign-in
           await file.delete();
         }
       }
     } catch (_) {}
   }
 
-  Future<void> _saveAndConnect() async {
-    final key = _controller.text.trim().toUpperCase();
-    if (key.length < 4) {
-      setState(() => _error = '키를 입력하세요');
-      return;
-    }
+  Future<void> _signInWithGoogle() async {
+    setState(() { _signingIn = true; _error = ''; });
 
-    // Verify key exists in Firebase
     try {
-      final snapshot = await FirebaseDatabase.instance.ref('users/$key').get();
-      if (!snapshot.exists) {
-        setState(() => _error = 'PC 앱이 실행 중인지 확인하세요.');
+      final googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        // User cancelled
+        setState(() { _signingIn = false; });
         return;
       }
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+        accessToken: googleAuth.accessToken,
+      );
+
+      await FirebaseAuth.instance.signInWithCredential(credential);
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+
+      // Save UID locally
+      final dir = await getApplicationDocumentsDirectory();
+      await File('${dir.path}/user_key.txt').writeAsString(uid);
+      setState(() { _savedKey = uid; _signingIn = false; });
     } catch (e) {
-      setState(() => _error = '연결 실패. 네트워크를 확인하세요.');
-      return;
+      setState(() {
+        _signingIn = false;
+        _error = '로그인 실패. 다시 시도해주세요.';
+      });
     }
-
-    // Save locally
-    final dir = await getApplicationDocumentsDirectory();
-    await File('${dir.path}/user_key.txt').writeAsString(key);
-    setState(() => _savedKey = key);
-  }
-
-  void _disconnect() async {
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/user_key.txt');
-    if (await file.exists()) await file.delete();
-    setState(() { _savedKey = null; _controller.clear(); _error = ''; });
   }
 
   @override
@@ -154,38 +164,27 @@ class _KeyGatePageState extends State<KeyGatePage> {
               const SizedBox(height: 20),
               const Text('Tam Studio', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
               const SizedBox(height: 8),
-              Text('PC 앱에 표시된 연동 키를 입력하세요', style: TextStyle(fontSize: 13, color: Colors.white.withAlpha(128))),
+              Text('Google 계정으로 로그인하세요', style: TextStyle(fontSize: 13, color: Colors.white.withAlpha(128))),
               const SizedBox(height: 32),
-              TextField(
-                controller: _controller,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 8, color: Colors.white),
-                inputFormatters: [FilteringTextInputFormatter.allow(RegExp('[a-zA-Z0-9]')), LengthLimitingTextInputFormatter(8)],
-                textCapitalization: TextCapitalization.characters,
-                decoration: InputDecoration(
-                  hintText: 'ABCD1234',
-                  hintStyle: TextStyle(color: Colors.white.withAlpha(51), letterSpacing: 8),
-                  filled: true,
-                  fillColor: const Color(0xFF22223A),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF333355))),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF333355))),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFA78BFA))),
-                ),
-              ),
               if (_error.isNotEmpty) ...[
-                const SizedBox(height: 8),
                 Text(_error, style: const TextStyle(fontSize: 12, color: Color(0xFFF44336))),
+                const SizedBox(height: 12),
               ],
-              const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity, height: 48,
-                child: ElevatedButton(
-                  onPressed: _saveAndConnect,
+                child: ElevatedButton.icon(
+                  onPressed: _signingIn ? null : _signInWithGoogle,
+                  icon: _signingIn
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.login, color: Colors.white),
+                  label: Text(
+                    _signingIn ? '로그인 중...' : 'Google로 로그인',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFA78BFA),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('연동하기', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
               ),
             ],
@@ -576,13 +575,13 @@ class SettingsPage extends StatelessWidget {
   final VoidCallback onDisconnect;
   const SettingsPage({super.key, required this.userKey, required this.onDisconnect});
 
-  Future<void> _disconnectKey(BuildContext context) async {
+  Future<void> _signOut(BuildContext context) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF22223A),
         title: const Text('연동 해제', style: TextStyle(color: Colors.white)),
-        content: const Text('연동을 해제하면 새 키를 입력해야 합니다.', style: TextStyle(color: Colors.white70)),
+        content: const Text('Google 계정 연동을 해제하면 다시 로그인해야 합니다.', style: TextStyle(color: Colors.white70)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
           ElevatedButton(
@@ -595,6 +594,13 @@ class SettingsPage extends StatelessWidget {
     );
     if (confirm != true) return;
 
+    // Sign out from Google and Firebase
+    try {
+      await GoogleSignIn().signOut();
+      await FirebaseAuth.instance.signOut();
+    } catch (_) {}
+
+    // Delete saved UID
     final dir = await getApplicationDocumentsDirectory();
     final file = File('${dir.path}/user_key.txt');
     if (await file.exists()) await file.delete();
@@ -603,6 +609,11 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final displayName = user?.displayName ?? '';
+    final email = user?.email ?? '';
+    final photoUrl = user?.photoURL;
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -618,7 +629,7 @@ class SettingsPage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Connection info
+            // Google account info
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -627,36 +638,54 @@ class SettingsPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: const Color(0xFF333355)),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Text('연동 키', style: TextStyle(fontSize: 11, color: Colors.white.withAlpha(128))),
-                  const SizedBox(height: 8),
-                  Text(userKey, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'monospace', letterSpacing: 6)),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFF4CAF50), shape: BoxShape.circle)),
-                      const SizedBox(width: 6),
-                      Text('연동 중', style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(179))),
-                    ],
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: const Color(0xFF333355),
+                    backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                    child: photoUrl == null
+                        ? const Icon(Icons.person, color: Colors.white54, size: 28)
+                        : null,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (displayName.isNotEmpty)
+                          Text(displayName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                        if (email.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(email, style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(153))),
+                        ],
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFF4CAF50), shape: BoxShape.circle)),
+                            const SizedBox(width: 6),
+                            Text('연동 중', style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(179))),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 12),
 
-            // Disconnect button
+            // Sign out button
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: () => _disconnectKey(context),
+                onPressed: () => _signOut(context),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Color(0xFF555555)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: const Text('연동 해제 (키 변경)', style: TextStyle(fontSize: 13, color: Color(0xFFEF5350))),
+                child: const Text('연동 해제 (로그아웃)', style: TextStyle(fontSize: 13, color: Color(0xFFEF5350))),
               ),
             ),
 

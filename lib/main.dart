@@ -13,7 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-const String appVersion = '0.1.5';
+const String appVersion = '0.1.6';
 
 // FCM background handler (must be top-level)
 @pragma('vm:entry-point')

@@ -13,7 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-const String appVersion = '0.1.8';
+const String appVersion = '0.1.9';
 
 // FCM background handler (must be top-level)
 @pragma('vm:entry-point')
@@ -269,7 +269,6 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: [
-        BuffMonitorPage(userKey: widget.userKey),
         DropTrackerPage(userKey: widget.userKey),
         ChatSendPage(userKey: widget.userKey),
         SettingsPage(userKey: widget.userKey, onDisconnect: _onDisconnect),
@@ -280,157 +279,9 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: const Color(0xFF16162A),
         indicatorColor: const Color(0xFF2A2A4E),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.shield), label: '버프'),
           NavigationDestination(icon: Icon(Icons.card_giftcard), label: '드랍'),
           NavigationDestination(icon: Icon(Icons.chat), label: '채팅'),
           NavigationDestination(icon: Icon(Icons.settings), label: '설정'),
-        ],
-      ),
-    );
-  }
-}
-
-// ══════════════════════════════════════
-//  Buff Monitor Page
-// ══════════════════════════════════════
-
-class BuffMonitorPage extends StatefulWidget {
-  final String userKey;
-  const BuffMonitorPage({super.key, required this.userKey});
-
-  @override
-  State<BuffMonitorPage> createState() => _BuffMonitorPageState();
-}
-
-class _BuffMonitorPageState extends State<BuffMonitorPage> {
-  List<Map<String, dynamic>> _buffs = [];
-  Timer? _refreshTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    final ref = FirebaseDatabase.instance.ref('users/${widget.userKey}/buffs');
-    ref.onValue.listen((event) {
-      final data = event.snapshot.value;
-      if (data == null) {
-        setState(() => _buffs = []);
-        return;
-      }
-      List<Map<String, dynamic>> parsed = [];
-      if (data is List) {
-        parsed = data.where((e) => e != null).map((e) => Map<String, dynamic>.from(e as Map)).toList();
-      } else if (data is Map) {
-        parsed = data.values.where((e) => e != null).map((e) => Map<String, dynamic>.from(e as Map)).toList();
-      }
-      setState(() => _buffs = parsed);
-    });
-
-    // Refresh UI every 100ms for smooth countdown timers
-    _refreshTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
-      if (_buffs.isNotEmpty && mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _refreshTimer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                const Icon(Icons.shield, color: Color(0xFFA78BFA), size: 24),
-                const SizedBox(width: 8),
-                const Text('버프 모니터',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                const Spacer(),
-                Text('${_buffs.length}개 활성',
-                    style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(128))),
-              ],
-            ),
-          ),
-          Expanded(
-            child: _buffs.isEmpty
-                ? Center(
-                    child: Text('활성 버프 없음\nPC에서 캡처 시작 후 게임 접속하세요',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white.withAlpha(77))))
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: _buffs.length,
-                    itemBuilder: (ctx, i) => _buildBuffCard(_buffs[i]),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBuffCard(Map<String, dynamic> buff) {
-    final name = buff['name'] ?? '?';
-    final duration = (buff['duration'] ?? 0) as num;
-    final start = (buff['start'] ?? 0) as num;
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final elapsed = now - start.toInt();
-    final remaining = duration > 0 ? (duration.toInt() - elapsed) : -1;
-    final progress = duration > 0 ? (remaining / duration).clamp(0.0, 1.0) : 1.0;
-    final barColor = progress > 0.3
-        ? const Color(0xFF4CAF50)
-        : progress > 0.1
-            ? const Color(0xFFFF9800)
-            : const Color(0xFFF44336);
-
-    String timeText;
-    if (remaining < 0) {
-      timeText = '∞';
-    } else if (remaining > 60000) {
-      timeText = '${(remaining / 60000).floor()}:${((remaining % 60000) / 1000).floor().toString().padLeft(2, '0')}';
-    } else {
-      timeText = '${(remaining / 1000).toStringAsFixed(1)}s';
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF22223A),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF333355)),
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(name,
-                      style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
-                ),
-                Text(timeText,
-                    style: TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.bold, color: barColor)),
-              ],
-            ),
-          ),
-          if (duration > 0)
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(10), bottomRight: Radius.circular(10)),
-              child: LinearProgressIndicator(
-                value: progress.toDouble(),
-                minHeight: 3,
-                backgroundColor: Colors.transparent,
-                color: barColor,
-              ),
-            ),
         ],
       ),
     );

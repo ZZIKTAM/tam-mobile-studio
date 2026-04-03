@@ -9,12 +9,22 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-const String appVersion = '0.1.0';
+const String appVersion = '0.1.1';
+
+// FCM background handler (must be top-level)
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  await NotificationService.instance.init();
   runApp(const TamStudioApp());
 }
 
@@ -213,6 +223,14 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _checkForUpdate();
+    NotificationService.instance.startListening(widget.userKey);
+    NotificationService.instance.saveFcmToken(widget.userKey);
+  }
+
+  @override
+  void dispose() {
+    NotificationService.instance.stopListening();
+    super.dispose();
   }
 
   void _onDisconnect() {
@@ -1040,5 +1058,96 @@ class _UpdateDialogState extends State<_UpdateDialog> {
           ),
       ],
     );
+  }
+}
+
+// ══════════════════════════════════════
+//  Notification Service
+// ══════════════════════════════════════
+
+class NotificationService {
+  static final NotificationService instance = NotificationService._();
+  NotificationService._();
+
+  final FlutterLocalNotificationsPlugin _local = FlutterLocalNotificationsPlugin();
+  StreamSubscription? _notifSubscription;
+
+  Future<void> init() async {
+    // Local notification setup
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    await _local.initialize(
+      const InitializationSettings(android: androidSettings),
+    );
+
+    // Create notification channel
+    const channel = AndroidNotificationChannel(
+      'tam_studio_channel',
+      'Tam Studio',
+      description: 'Tam Studio 알림',
+      importance: Importance.high,
+    );
+    await _local.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+
+    // FCM permission
+    final messaging = FirebaseMessaging.instance;
+    await messaging.requestPermission(alert: true, badge: true, sound: true);
+
+    // FCM foreground handler → local notification
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      final notification = message.notification;
+      if (notification != null) {
+        showLocal(notification.title ?? '', notification.body ?? '');
+      }
+    });
+  }
+
+  /// Start listening to Firebase notifications path for a user
+  void startListening(String userKey) {
+    _notifSubscription?.cancel();
+    final ref = FirebaseDatabase.instance.ref('users/$userKey/notifications');
+    _notifSubscription = ref.onChildAdded.listen((event) {
+      final data = event.snapshot.value;
+      if (data == null || data is! Map) return;
+      final title = data['title']?.toString() ?? '';
+      final body = data['body']?.toString() ?? '';
+      if (title.isNotEmpty || body.isNotEmpty) {
+        showLocal(title, body);
+      }
+      // Mark as read
+      event.snapshot.ref.update({'read': true});
+    });
+  }
+
+  /// Save FCM token to Firebase for push notifications
+  Future<void> saveFcmToken(String userKey) async {
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null) {
+        await FirebaseDatabase.instance.ref('users/$userKey/fcm_token').set(token);
+      }
+    } catch (_) {}
+  }
+
+  void showLocal(String title, String body) {
+    _local.show(
+      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'tam_studio_channel',
+          'Tam Studio',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+        ),
+      ),
+    );
+  }
+
+  void stopListening() {
+    _notifSubscription?.cancel();
+    _notifSubscription = null;
   }
 }

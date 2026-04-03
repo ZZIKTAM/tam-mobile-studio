@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,7 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-const String appVersion = '0.1.1';
+const String appVersion = '0.1.2';
 
 // FCM background handler (must be top-level)
 @pragma('vm:entry-point')
@@ -25,6 +26,7 @@ void main() async {
   await Firebase.initializeApp();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   await NotificationService.instance.init();
+  await AssetService.instance.init();
   runApp(const TamStudioApp());
 }
 
@@ -565,6 +567,8 @@ class _DropTrackerPageState extends State<DropTrackerPage> {
   Widget _buildDropItem(Map<String, dynamic> item) {
     final name = item['name'] ?? '?';
     final amount = item['amount'] ?? 0;
+    final itemId = item['id']?.toString() ?? '';
+    final iconBasename = AssetService.instance.itemIconMap[itemId];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
@@ -576,6 +580,17 @@ class _DropTrackerPageState extends State<DropTrackerPage> {
       ),
       child: Row(
         children: [
+          if (iconBasename != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Image.asset(
+                'assets/icons/$iconBasename.webp',
+                width: 36, height: 36,
+                errorBuilder: (_, __, ___) => const SizedBox(width: 36, height: 36),
+              ),
+            )
+          else
+            const SizedBox(width: 44),
           Expanded(
             child: Text(name,
                 style: const TextStyle(fontSize: 13, color: Colors.white)),
@@ -797,10 +812,15 @@ class _ChatSendPageState extends State<ChatSendPage> {
     final type = msg['type'] ?? 0;
     final color = channelColors[ch] ?? const Color(0xFF8892A8);
 
+    String? stickerFile;
     String displayMsg = text;
     if (type == 3) {
       final emote = msg['emote'];
-      displayMsg = emote != null ? '[이모티콘 #$emote]' : '[이모티콘]';
+      if (emote != null) {
+        final stickerInfo = AssetService.instance.stickerMap[emote.toString()];
+        stickerFile = stickerInfo?['file'] as String?;
+      }
+      if (stickerFile == null) displayMsg = '[이모티콘]';
     }
 
     return Container(
@@ -816,7 +836,11 @@ class _ChatSendPageState extends State<ChatSendPage> {
         children: [
           Text('[$ch] ', style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
           if (nick.isNotEmpty) Text('$nick: ', style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600)),
-          Expanded(child: Text(displayMsg, style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(230)))),
+          if (stickerFile != null)
+            Image.asset('assets/emojis/$stickerFile.webp', width: 48, height: 48,
+                errorBuilder: (_, __, ___) => const Text('[이모티콘]', style: TextStyle(fontSize: 12, color: Colors.white70)))
+          else
+            Expanded(child: Text(displayMsg, style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(230)))),
         ],
       ),
     );
@@ -1149,5 +1173,33 @@ class NotificationService {
   void stopListening() {
     _notifSubscription?.cancel();
     _notifSubscription = null;
+  }
+}
+
+// ══════════════════════════════════════
+//  Asset Service
+// ══════════════════════════════════════
+
+class AssetService {
+  static final AssetService instance = AssetService._();
+  AssetService._();
+
+  // item_id (string) -> icon_basename (without extension)
+  Map<String, String> itemIconMap = {};
+  // config_id (string) -> sticker info map
+  Map<String, Map<String, dynamic>> stickerMap = {};
+
+  Future<void> init() async {
+    try {
+      final iconJson = await rootBundle.loadString('assets/item_icons.json');
+      final raw = jsonDecode(iconJson) as Map<String, dynamic>;
+      itemIconMap = raw.map((k, v) => MapEntry(k, v as String));
+    } catch (_) {}
+
+    try {
+      final stickerJson = await rootBundle.loadString('assets/chat_stickers.json');
+      final raw = jsonDecode(stickerJson) as Map<String, dynamic>;
+      stickerMap = raw.map((k, v) => MapEntry(k, Map<String, dynamic>.from(v as Map)));
+    } catch (_) {}
   }
 }

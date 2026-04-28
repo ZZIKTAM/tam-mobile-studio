@@ -16,7 +16,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:home_widget/home_widget.dart';
 
-const String appVersion = '0.3.3';
+const String appVersion = '0.3.4';
 
 // ── Date Feature Color Constants ──────────────────────
 const _bgCard       = Color(0xFF16213E);
@@ -1427,7 +1427,7 @@ class _DatePageState extends State<DatePage>
     return _events[_normalizeDate(day)] ?? [];
   }
 
-  void _pushWidgetData() {
+  Future<void> _pushWidgetData() async {
     try {
       final now = DateTime.now();
       const months = ['January','February','March','April','May','June',
@@ -1454,11 +1454,13 @@ class _DatePageState extends State<DatePage>
               })
           .toList();
 
-      HomeWidget.saveWidgetData<String>('widgetMonth', monthStr);
-      HomeWidget.saveWidgetData<String>('widgetEventPreview', preview);
-      HomeWidget.saveWidgetData<String>('widgetDatesJson', jsonEncode(thisMonthDates));
-      HomeWidget.updateWidget(name: 'DateWidgetProvider', iOSName: 'DateWidget');
-    } catch (_) {}
+      await HomeWidget.saveWidgetData<String>('widgetMonth', monthStr);
+      await HomeWidget.saveWidgetData<String>('widgetEventPreview', preview);
+      await HomeWidget.saveWidgetData<String>('widgetDatesJson', jsonEncode(thisMonthDates));
+      await HomeWidget.updateWidget(name: 'DateWidgetProvider', iOSName: 'DateWidget');
+    } catch (e) {
+      debugPrint('Widget sync failed: $e');
+    }
   }
 
   void _openAddEvent() {

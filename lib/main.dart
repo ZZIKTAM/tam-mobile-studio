@@ -16,7 +16,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:home_widget/home_widget.dart';
 
-const String appVersion = '0.3.4';
+const String appVersion = '0.3.5';
 
 // ── Date Feature Color Constants ──────────────────────
 const _bgCard       = Color(0xFF16213E);

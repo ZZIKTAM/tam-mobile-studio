@@ -13,13 +13,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:table_calendar/table_calendar.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:device_calendar/device_calendar.dart';
-import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 
-const String appVersion = '0.3.12';
+const String appVersion = '0.3.13';
 
 // ── Date Feature Color Constants ──────────────────────
 const _bgCard       = Color(0xFF16213E);
@@ -726,6 +724,7 @@ class DateEvent {
   final String id;
   final String title;
   final String date;       // "yyyy-MM-dd"
+  final String? endDate;   // "yyyy-MM-dd" or null (single-day)
   final String time;       // "HH:mm" or ""
   final String location;
   final String category;
@@ -739,6 +738,7 @@ class DateEvent {
     required this.id,
     required this.title,
     required this.date,
+    this.endDate,
     required this.time,
     required this.location,
     required this.category,
@@ -775,6 +775,7 @@ class DateEvent {
       id: id,
       title: m['title']?.toString() ?? '',
       date: m['date']?.toString() ?? '',
+      endDate: m['endDate']?.toString(),
       time: m['time']?.toString() ?? '',
       location: m['location']?.toString() ?? '',
       category: m['category']?.toString() ?? '기타',
@@ -789,6 +790,7 @@ class DateEvent {
   Map<String, dynamic> toMap() => {
     'title': title,
     'date': date,
+    if (endDate != null) 'endDate': endDate!,
     'time': time,
     'location': location,
     'category': category,
@@ -1022,6 +1024,7 @@ class _DatePageState extends State<DatePage>
   DateTime _selectedDay = DateTime.now();
   DateTime _focusedDay = DateTime.now();
   Map<DateTime, List<DateEvent>> _events = {};
+  List<DateEvent> _allEvents = [];
   Map<DateTime, List<NativeCalendarEvent>> _nativeEvents = {};
   bool _calPermission = false;
   static final _calPlugin = DeviceCalendarPlugin();
@@ -1062,18 +1065,20 @@ class _DatePageState extends State<DatePage>
     _sub = ref.onValue.listen((event) {
       final data = event.snapshot.value;
       if (data == null) {
-        if (mounted) setState(() => _events = {});
+        if (mounted) setState(() { _events = {}; _allEvents = []; });
         return;
       }
       final rawMap = Map<String, dynamic>.from(data as Map);
       final parsed = <DateTime, List<DateEvent>>{};
+      final all = <DateEvent>[];
       rawMap.forEach((key, value) {
         final item = DateEvent.fromMap(key, Map<String, dynamic>.from(value as Map));
+        all.add(item);
         final day = _normalizeDate(DateTime.parse(item.date));
         parsed.putIfAbsent(day, () => []).add(item);
       });
       if (mounted) {
-        setState(() => _events = parsed);
+        setState(() { _events = parsed; _allEvents = all; });
         _pushWidgetData();
       }
     });
@@ -1248,7 +1253,7 @@ class _DatePageState extends State<DatePage>
                 _CalendarTab(
                   selectedDay: _selectedDay,
                   focusedDay: _focusedDay,
-                  events: _events,
+                  allEvents: _allEvents,
                   eventsForDay: _eventsForDay,
                   onDaySelected: (sel, foc) {
                     setState(() { _selectedDay = sel; _focusedDay = foc; });
@@ -1275,7 +1280,7 @@ class _DatePageState extends State<DatePage>
 class _CalendarTab extends StatelessWidget {
   final DateTime selectedDay;
   final DateTime focusedDay;
-  final Map<DateTime, List<DateEvent>> events;
+  final List<DateEvent> allEvents;
   final List<DateEvent> Function(DateTime) eventsForDay;
   final void Function(DateTime, DateTime) onDaySelected;
   final void Function(DateTime) onFocusedDayChanged;
@@ -1286,7 +1291,7 @@ class _CalendarTab extends StatelessWidget {
   const _CalendarTab({
     required this.selectedDay,
     required this.focusedDay,
-    required this.events,
+    required this.allEvents,
     required this.eventsForDay,
     required this.onDaySelected,
     required this.onFocusedDayChanged,
@@ -1356,66 +1361,13 @@ class _CalendarTab extends StatelessWidget {
             ],
           ),
         ),
-        // TableCalendar
-        TableCalendar<DateEvent>(
-          firstDay: DateTime(2020),
-          lastDay: DateTime(2030),
-          focusedDay: focusedDay,
-          selectedDayPredicate: (d) => isSameDay(d, selectedDay),
-          eventLoader: eventsForDay,
+        // Galaxy-style calendar grid
+        _GalaxyCalendarGrid(
+          focusedMonth: focusedDay,
+          selectedDay: selectedDay,
+          allEvents: allEvents,
+          nativeEventsForDay: nativeEventsForDay,
           onDaySelected: onDaySelected,
-          onPageChanged: onFocusedDayChanged,
-          calendarFormat: CalendarFormat.month,
-          headerVisible: false,
-          calendarBuilders: CalendarBuilders(
-            markerBuilder: (context, day, events) {
-              final hasFirebase = events.isNotEmpty;
-              final hasNative = nativeEventsForDay(day).isNotEmpty;
-              if (!hasFirebase && !hasNative) return const SizedBox.shrink();
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (hasFirebase)
-                    Container(
-                      width: 6, height: 6,
-                      margin: const EdgeInsets.symmetric(horizontal: 1),
-                      decoration: const BoxDecoration(
-                        color: _accent, shape: BoxShape.circle,
-                      ),
-                    ),
-                  if (hasNative)
-                    Container(
-                      width: 6, height: 6,
-                      margin: const EdgeInsets.symmetric(horizontal: 1),
-                      decoration: const BoxDecoration(
-                        color: _textSecondary, shape: BoxShape.circle,
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-          calendarStyle: CalendarStyle(
-            outsideDaysVisible: false,
-            defaultTextStyle: GoogleFonts.nunito(color: _textPrimary),
-            weekendTextStyle: GoogleFonts.nunito(color: _textPrimary),
-            todayDecoration: BoxDecoration(
-              border: Border.all(color: _primary, width: 1.5),
-              shape: BoxShape.circle,
-            ),
-            todayTextStyle: GoogleFonts.nunito(color: _primary, fontWeight: FontWeight.bold),
-            selectedDecoration: const BoxDecoration(
-              color: _primary,
-              shape: BoxShape.circle,
-            ),
-            selectedTextStyle: GoogleFonts.nunito(color: Colors.white, fontWeight: FontWeight.bold),
-            cellMargin: const EdgeInsets.all(4),
-          ),
-          daysOfWeekStyle: DaysOfWeekStyle(
-            weekdayStyle: GoogleFonts.nunito(fontSize: 12, color: _textSecondary),
-            weekendStyle: GoogleFonts.nunito(fontSize: 12, color: _textSecondary),
-          ),
-          rowHeight: 48,
         ),
         Divider(color: _dividerColor, height: 1),
         // Selected day label
@@ -1556,6 +1508,299 @@ class _CalendarTab extends StatelessWidget {
                   ],
                 ),
         ),
+      ],
+    );
+  }
+}
+
+// ══════════════════════════════════════
+//  Galaxy Calendar Grid
+// ══════════════════════════════════════
+
+const _kDayNumHeight = 28.0;
+const _kBarHeight = 14.0;
+const _kBarGap = 2.0;
+const _kMaxLanes = 3;
+const _kRowHeight = _kDayNumHeight + _kMaxLanes * (_kBarHeight + _kBarGap) + 6.0;
+
+class _BarLayout {
+  final String eventId;
+  final String title;
+  final Color color;
+  final int startCol; // 0..6 within this week row
+  final int endCol;   // inclusive
+  final int lane;     // 0..2
+  final bool isStart;
+  final bool isEnd;
+  const _BarLayout({
+    required this.eventId,
+    required this.title,
+    required this.color,
+    required this.startCol,
+    required this.endCol,
+    required this.lane,
+    required this.isStart,
+    required this.isEnd,
+  });
+}
+
+class _GalaxyCalendarGrid extends StatelessWidget {
+  final DateTime focusedMonth;
+  final DateTime selectedDay;
+  final List<DateEvent> allEvents;
+  final List<NativeCalendarEvent> Function(DateTime) nativeEventsForDay;
+  final void Function(DateTime, DateTime) onDaySelected;
+
+  const _GalaxyCalendarGrid({
+    required this.focusedMonth,
+    required this.selectedDay,
+    required this.allEvents,
+    required this.nativeEventsForDay,
+    required this.onDaySelected,
+  });
+
+  static DateTime _norm(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  // Returns list of week rows: each row = list of 7 dates (null = outside month)
+  List<List<DateTime?>> _buildWeeks() {
+    final first = DateTime(focusedMonth.year, focusedMonth.month, 1);
+    final daysInMonth = DateUtils.getDaysInMonth(focusedMonth.year, focusedMonth.month);
+    // weekday: Mon=1..Sun=7 → Sunday-first offset
+    final offset = first.weekday % 7; // Sun=0,Mon=1..Sat=6
+    final totalCells = offset + daysInMonth;
+    final numRows = (totalCells / 7).ceil();
+
+    final weeks = <List<DateTime?>>[];
+    for (int row = 0; row < numRows; row++) {
+      final week = <DateTime?>[];
+      for (int col = 0; col < 7; col++) {
+        final idx = row * 7 + col;
+        if (idx < offset || idx >= offset + daysInMonth) {
+          week.add(null);
+        } else {
+          final day = idx - offset + 1;
+          week.add(DateTime(focusedMonth.year, focusedMonth.month, day));
+        }
+      }
+      weeks.add(week);
+    }
+    return weeks;
+  }
+
+  // For a given week row, compute _BarLayout entries using greedy lane assignment
+  List<_BarLayout> _layoutBars(List<DateTime?> week) {
+    // Collect events that overlap this week
+    final weekStart = week.firstWhere((d) => d != null)!;
+    final weekEnd = week.lastWhere((d) => d != null)!;
+
+    final bars = <_BarLayout>[];
+    // lane occupancy: lane → sorted list of endCol (inclusive)
+    final lanes = List<int>.filled(_kMaxLanes, -1); // last endCol in each lane
+
+    // Sort events by startDate then duration (longer first)
+    final candidates = allEvents.where((ev) {
+      final start = _norm(DateTime.parse(ev.date));
+      final end = ev.endDate != null ? _norm(DateTime.parse(ev.endDate!)) : start;
+      return !end.isBefore(weekStart) && !start.isAfter(weekEnd);
+    }).toList()
+      ..sort((a, b) {
+        final as_ = _norm(DateTime.parse(a.date));
+        final bs = _norm(DateTime.parse(b.date));
+        if (as_ != bs) return as_.compareTo(bs);
+        final ae = a.endDate != null ? _norm(DateTime.parse(a.endDate!)) : as_;
+        final be = b.endDate != null ? _norm(DateTime.parse(b.endDate!)) : bs;
+        return be.difference(bs).compareTo(ae.difference(as_)); // longer first
+      });
+
+    for (final ev in candidates) {
+      final evStart = _norm(DateTime.parse(ev.date));
+      final evEnd = ev.endDate != null ? _norm(DateTime.parse(ev.endDate!)) : evStart;
+
+      // Compute column range within this week
+      int startCol = 0, endCol = 6;
+      for (int c = 0; c < 7; c++) {
+        if (week[c] != null && !_norm(week[c]!).isBefore(evStart)) {
+          startCol = c;
+          break;
+        }
+      }
+      for (int c = 6; c >= 0; c--) {
+        if (week[c] != null && !_norm(week[c]!).isAfter(evEnd)) {
+          endCol = c;
+          break;
+        }
+      }
+
+      // Assign to first available lane
+      int lane = -1;
+      for (int l = 0; l < _kMaxLanes; l++) {
+        if (lanes[l] < startCol) {
+          lane = l;
+          break;
+        }
+      }
+      if (lane == -1) continue; // no room
+
+      lanes[lane] = endCol;
+
+      bars.add(_BarLayout(
+        eventId: ev.id,
+        title: ev.title,
+        color: ev.barColor,
+        startCol: startCol,
+        endCol: endCol,
+        lane: lane,
+        isStart: !evStart.isBefore(week[startCol]!),
+        isEnd: !evEnd.isAfter(week[endCol]!),
+      ));
+    }
+    return bars;
+  }
+
+  Widget _buildWeekRow(BuildContext context, List<DateTime?> week, List<_BarLayout> bars) {
+    return SizedBox(
+      height: _kRowHeight,
+      child: LayoutBuilder(builder: (ctx, constraints) {
+        final cellW = constraints.maxWidth / 7;
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // Layer 0: day number cells
+            Row(
+              children: List.generate(7, (col) {
+                final day = week[col];
+                if (day == null) return SizedBox(width: cellW);
+                final isToday = _norm(day) == _norm(DateTime.now());
+                final isSel = _norm(day) == _norm(selectedDay);
+                final isSun = col == 0;
+                final isSat = col == 6;
+                Color textColor = _textPrimary;
+                if (isSun) textColor = const Color(0xFFE8A598);
+                if (isSat) textColor = _primary;
+
+                return GestureDetector(
+                  onTap: () => onDaySelected(day, day),
+                  child: SizedBox(
+                    width: cellW,
+                    height: _kRowHeight,
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Container(
+                          width: 22, height: 22,
+                          alignment: Alignment.center,
+                          decoration: isSel
+                              ? const BoxDecoration(color: _primary, shape: BoxShape.circle)
+                              : isToday
+                                  ? BoxDecoration(
+                                      border: Border.all(color: _primary, width: 1.5),
+                                      shape: BoxShape.circle)
+                                  : null,
+                          child: Text(
+                            '${day.day}',
+                            style: GoogleFonts.nunito(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isSel
+                                  ? Colors.white
+                                  : isToday
+                                      ? _primary
+                                      : textColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+            // Layer 1: event bars
+            ...bars.map((bar) {
+              final left = bar.startCol * cellW + 1;
+              final width = (bar.endCol - bar.startCol + 1) * cellW - 2;
+              final top = _kDayNumHeight + bar.lane * (_kBarHeight + _kBarGap);
+              return Positioned(
+                left: left,
+                top: top,
+                width: width,
+                height: _kBarHeight,
+                child: GestureDetector(
+                  onTap: () {
+                    if (week[bar.startCol] != null) {
+                      onDaySelected(week[bar.startCol]!, week[bar.startCol]!);
+                    }
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: bar.color.withAlpha(220),
+                      borderRadius: BorderRadius.horizontal(
+                        left: bar.isStart ? const Radius.circular(4) : Radius.zero,
+                        right: bar.isEnd ? const Radius.circular(4) : Radius.zero,
+                      ),
+                    ),
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: bar.isStart
+                        ? Text(
+                            bar.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 9,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ),
+              );
+            }),
+          ],
+        );
+      }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final weeks = _buildWeeks();
+
+    return Column(
+      children: [
+        // Day-of-week header
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+          child: Row(
+            children: ['일','월','화','수','목','금','토'].map((label) => Expanded(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.nunito(
+                  fontSize: 11,
+                  color: label == '일'
+                      ? const Color(0xFFE8A598)
+                      : label == '토'
+                          ? _primary
+                          : _textSecondary,
+                ),
+              ),
+            )).toList(),
+          ),
+        ),
+        const Divider(color: _dividerColor, height: 1),
+        // Week rows
+        ...weeks.map((week) {
+          final bars = _layoutBars(week);
+          return Column(
+            children: [
+              _buildWeekRow(context, week, bars),
+              const Divider(color: _dividerColor, height: 1, thickness: 0.5),
+            ],
+          );
+        }),
       ],
     );
   }
@@ -2019,6 +2264,7 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
   final _tagCtrl = TextEditingController();
 
   late DateTime _date;
+  DateTime? _endDate;
   String _time = '';
   String _category = '식사';
   String _eventType = 'normal';
@@ -2036,6 +2282,7 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
       _locationCtrl.text = e.location;
       _memoCtrl.text = e.memo;
       _date = DateTime.tryParse(e.date) ?? DateTime.now();
+      _endDate = e.endDate != null ? DateTime.tryParse(e.endDate!) : null;
       _time = e.time;
       _category = e.category;
       _eventType = e.eventType;
@@ -2073,6 +2320,22 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
     if (picked != null && mounted) setState(() => _date = picked);
   }
 
+  Future<void> _pickEndDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _endDate ?? _date,
+      firstDate: _date,
+      lastDate: DateTime(2030),
+      builder: (ctx, child) => Theme(
+        data: ThemeData.dark().copyWith(
+          colorScheme: const ColorScheme.dark(primary: _primary),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null && mounted) setState(() => _endDate = picked);
+  }
+
   Future<void> _pickTime() async {
     final init = _time.isNotEmpty
         ? TimeOfDay(
@@ -2103,9 +2366,10 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
     setState(() => _saving = true);
 
     final ref = FirebaseDatabase.instance.ref('users/${widget.userKey}/dates');
-    final map = {
+    final map = <String, dynamic>{
       'title': title,
       'date': _formatDate(_date),
+      if (_endDate != null && _endDate!.isAfter(_date)) 'endDate': _formatDate(_endDate!),
       'time': _time,
       'location': _locationCtrl.text.trim(),
       'category': _category,
@@ -2172,7 +2436,7 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
               ),
             ),
             const SizedBox(height: 10),
-            // Date
+            // Date (start)
             _SheetField(
               child: InkWell(
                 onTap: _pickDate,
@@ -2184,6 +2448,36 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
                       const SizedBox(width: 10),
                       Text(_formatDate(_date),
                           style: GoogleFonts.nunito(fontSize: 14, color: _textPrimary)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            // End date (optional, for multi-day events)
+            _SheetField(
+              child: InkWell(
+                onTap: _pickEndDate,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(
+                    children: [
+                      Icon(Icons.calendar_month_outlined, size: 18,
+                          color: _endDate != null ? _primary : _textSecondary),
+                      const SizedBox(width: 10),
+                      Text(
+                        _endDate != null ? '~ ${_formatDate(_endDate!)}' : '종료일 (선택, 1박2일 등)',
+                        style: GoogleFonts.nunito(
+                            fontSize: 14,
+                            color: _endDate != null ? _textPrimary : _textSecondary),
+                      ),
+                      if (_endDate != null) ...[
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: () => setState(() => _endDate = null),
+                          child: const Icon(Icons.close, size: 16, color: _textSecondary),
+                        ),
+                      ],
                     ],
                   ),
                 ),

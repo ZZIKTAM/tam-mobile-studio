@@ -137,3 +137,15 @@ Output: `build/app/outputs/flutter-apk/app-release.apk`
 - User communicates in Korean
 - Code comments and commit messages in English
 - CLAUDE.md in English
+
+## 하네스: date-feature
+
+**목표:** Firebase 기반 데이트 일정 관리 기능 (캘린더, 버킷리스트, 홈 위젯) 개발
+
+**트리거:** 데이트 기능 관련 작업 요청 시 `date-orchestrator` 스킬을 사용하라. 단순 질문은 직접 응답 가능.
+
+**변경 이력:**
+| 날짜 | 변경 내용 | 대상 | 사유 |
+|------|----------|------|------|
+| 2026-04-28 | 초기 구성 | 전체 | 데이트 기능 개발 시작 |
+| 2026-04-28 | flutter-designer 에이전트 추가 + frontend-design 플러그인 설치 | agents/flutter-designer.md, date-orchestrator | UI 디자인 품질 향상 |

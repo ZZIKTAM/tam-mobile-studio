@@ -17,7 +17,7 @@ import 'package:home_widget/home_widget.dart';
 import 'package:device_calendar/device_calendar.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 
-const String appVersion = '0.3.13';
+const String appVersion = '0.3.14';
 
 // ── Date Feature Color Constants ──────────────────────
 const _bgCard       = Color(0xFF16213E);
@@ -749,6 +749,9 @@ class DateEvent {
     required this.createdAt,
   });
 
+  DateTime get startDateTime => DateTime.parse(date);
+  DateTime get endDateTime => endDate != null ? DateTime.parse(endDate!) : startDateTime;
+
   Color get barColor => eventType == 'anniversary' ? _accent : _primary;
 
   String get formattedDate {
@@ -1085,7 +1088,12 @@ class _DatePageState extends State<DatePage>
   }
 
   List<DateEvent> _eventsForDay(DateTime day) {
-    return _events[_normalizeDate(day)] ?? [];
+    final normalized = _normalizeDate(day);
+    return _allEvents.where((ev) {
+      final start = _normalizeDate(ev.startDateTime);
+      final end = _normalizeDate(ev.endDateTime);
+      return !normalized.isBefore(start) && !normalized.isAfter(end);
+    }).toList();
   }
 
   Future<void> _pushWidgetData() async {
@@ -1266,6 +1274,14 @@ class _DatePageState extends State<DatePage>
                   userKey: widget.userKey,
                   nativeEventsForDay: (day) =>
                       _nativeEvents[_normalizeDate(day)] ?? [],
+                  onEventTap: (ev) {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => _EventDetailSheet(event: ev, userKey: widget.userKey),
+                    );
+                  },
                 ),
                 BucketlistPage(userKey: widget.userKey),
               ],
@@ -1287,6 +1303,7 @@ class _CalendarTab extends StatelessWidget {
   final VoidCallback onAddEvent;
   final String userKey;
   final List<NativeCalendarEvent> Function(DateTime) nativeEventsForDay;
+  final void Function(DateEvent) onEventTap;
 
   const _CalendarTab({
     required this.selectedDay,
@@ -1298,6 +1315,7 @@ class _CalendarTab extends StatelessWidget {
     required this.onAddEvent,
     required this.userKey,
     required this.nativeEventsForDay,
+    required this.onEventTap,
   });
 
   String _monthTitle(DateTime d) {
@@ -1361,13 +1379,24 @@ class _CalendarTab extends StatelessWidget {
             ],
           ),
         ),
-        // Galaxy-style calendar grid
-        _GalaxyCalendarGrid(
-          focusedMonth: focusedDay,
-          selectedDay: selectedDay,
-          allEvents: allEvents,
-          nativeEventsForDay: nativeEventsForDay,
-          onDaySelected: onDaySelected,
+        // Galaxy-style calendar grid (swipe left/right to change month)
+        GestureDetector(
+          onHorizontalDragEnd: (details) {
+            final v = details.primaryVelocity ?? 0;
+            if (v < -300) {
+              onFocusedDayChanged(DateTime(focusedDay.year, focusedDay.month + 1, 1));
+            } else if (v > 300) {
+              onFocusedDayChanged(DateTime(focusedDay.year, focusedDay.month - 1, 1));
+            }
+          },
+          child: _GalaxyCalendarGrid(
+            focusedMonth: focusedDay,
+            selectedDay: selectedDay,
+            allEvents: allEvents,
+            nativeEventsForDay: nativeEventsForDay,
+            onDaySelected: onDaySelected,
+            onEventTap: onEventTap,
+          ),
         ),
         Divider(color: _dividerColor, height: 1),
         // Selected day label
@@ -1518,7 +1547,7 @@ class _CalendarTab extends StatelessWidget {
 // ══════════════════════════════════════
 
 const _kDayNumHeight = 28.0;
-const _kBarHeight = 14.0;
+const _kBarHeight = 16.0;
 const _kBarGap = 2.0;
 const _kMaxLanes = 3;
 const _kRowHeight = _kDayNumHeight + _kMaxLanes * (_kBarHeight + _kBarGap) + 6.0;
@@ -1532,6 +1561,7 @@ class _BarLayout {
   final int lane;     // 0..2
   final bool isStart;
   final bool isEnd;
+  final DateEvent? dateEvent; // null for native calendar events
   const _BarLayout({
     required this.eventId,
     required this.title,
@@ -1541,7 +1571,14 @@ class _BarLayout {
     required this.lane,
     required this.isStart,
     required this.isEnd,
+    this.dateEvent,
   });
+}
+
+class _LayoutResult {
+  final List<_BarLayout> bars;
+  final Map<int, int> overflow; // col → hidden event count
+  const _LayoutResult(this.bars, this.overflow);
 }
 
 class _GalaxyCalendarGrid extends StatelessWidget {
@@ -1550,6 +1587,7 @@ class _GalaxyCalendarGrid extends StatelessWidget {
   final List<DateEvent> allEvents;
   final List<NativeCalendarEvent> Function(DateTime) nativeEventsForDay;
   final void Function(DateTime, DateTime) onDaySelected;
+  final void Function(DateEvent) onEventTap;
 
   const _GalaxyCalendarGrid({
     required this.focusedMonth,
@@ -1557,6 +1595,7 @@ class _GalaxyCalendarGrid extends StatelessWidget {
     required this.allEvents,
     required this.nativeEventsForDay,
     required this.onDaySelected,
+    required this.onEventTap,
   });
 
   static DateTime _norm(DateTime d) => DateTime(d.year, d.month, d.day);
@@ -1565,10 +1604,8 @@ class _GalaxyCalendarGrid extends StatelessWidget {
   List<List<DateTime?>> _buildWeeks() {
     final first = DateTime(focusedMonth.year, focusedMonth.month, 1);
     final daysInMonth = DateUtils.getDaysInMonth(focusedMonth.year, focusedMonth.month);
-    // weekday: Mon=1..Sun=7 → Sunday-first offset
     final offset = first.weekday % 7; // Sun=0,Mon=1..Sat=6
-    final totalCells = offset + daysInMonth;
-    final numRows = (totalCells / 7).ceil();
+    final numRows = ((offset + daysInMonth) / 7).ceil();
 
     final weeks = <List<DateTime?>>[];
     for (int row = 0; row < numRows; row++) {
@@ -1578,8 +1615,7 @@ class _GalaxyCalendarGrid extends StatelessWidget {
         if (idx < offset || idx >= offset + daysInMonth) {
           week.add(null);
         } else {
-          final day = idx - offset + 1;
-          week.add(DateTime(focusedMonth.year, focusedMonth.month, day));
+          week.add(DateTime(focusedMonth.year, focusedMonth.month, idx - offset + 1));
         }
       }
       weeks.add(week);
@@ -1587,60 +1623,57 @@ class _GalaxyCalendarGrid extends StatelessWidget {
     return weeks;
   }
 
-  // For a given week row, compute _BarLayout entries using greedy lane assignment
-  List<_BarLayout> _layoutBars(List<DateTime?> week) {
-    // Collect events that overlap this week
-    final weekStart = week.firstWhere((d) => d != null)!;
-    final weekEnd = week.lastWhere((d) => d != null)!;
+  // Compute bar layout + overflow for a week row
+  _LayoutResult _layoutBars(List<DateTime?> week) {
+    final weekDates = week.map((d) => d != null ? _norm(d) : null).toList();
+    final weekStart = weekDates.firstWhere((d) => d != null)!;
+    final weekEnd = weekDates.lastWhere((d) => d != null)!;
 
     final bars = <_BarLayout>[];
-    // lane occupancy: lane → sorted list of endCol (inclusive)
-    final lanes = List<int>.filled(_kMaxLanes, -1); // last endCol in each lane
+    final lanes = List<int>.filled(_kMaxLanes, -1); // high-water endCol per lane
+    final overflow = <int, int>{};
 
-    // Sort events by startDate then duration (longer first)
+    // Firebase events — sorted by start, longer first
     final candidates = allEvents.where((ev) {
-      final start = _norm(DateTime.parse(ev.date));
-      final end = ev.endDate != null ? _norm(DateTime.parse(ev.endDate!)) : start;
-      return !end.isBefore(weekStart) && !start.isAfter(weekEnd);
+      final s = _norm(ev.startDateTime);
+      final e = _norm(ev.endDateTime);
+      return !e.isBefore(weekStart) && !s.isAfter(weekEnd);
     }).toList()
       ..sort((a, b) {
-        final as_ = _norm(DateTime.parse(a.date));
-        final bs = _norm(DateTime.parse(b.date));
+        final as_ = _norm(a.startDateTime);
+        final bs = _norm(b.startDateTime);
         if (as_ != bs) return as_.compareTo(bs);
-        final ae = a.endDate != null ? _norm(DateTime.parse(a.endDate!)) : as_;
-        final be = b.endDate != null ? _norm(DateTime.parse(b.endDate!)) : bs;
+        final ae = _norm(a.endDateTime);
+        final be = _norm(b.endDateTime);
         return be.difference(bs).compareTo(ae.difference(as_)); // longer first
       });
 
     for (final ev in candidates) {
-      final evStart = _norm(DateTime.parse(ev.date));
-      final evEnd = ev.endDate != null ? _norm(DateTime.parse(ev.endDate!)) : evStart;
+      final evStart = _norm(ev.startDateTime);
+      final evEnd = _norm(ev.endDateTime);
 
-      // Compute column range within this week
       int startCol = 0, endCol = 6;
       for (int c = 0; c < 7; c++) {
-        if (week[c] != null && !_norm(week[c]!).isBefore(evStart)) {
-          startCol = c;
-          break;
+        if (weekDates[c] != null && !weekDates[c]!.isBefore(evStart)) {
+          startCol = c; break;
         }
       }
       for (int c = 6; c >= 0; c--) {
-        if (week[c] != null && !_norm(week[c]!).isAfter(evEnd)) {
-          endCol = c;
-          break;
+        if (weekDates[c] != null && !weekDates[c]!.isAfter(evEnd)) {
+          endCol = c; break;
         }
       }
 
-      // Assign to first available lane
       int lane = -1;
       for (int l = 0; l < _kMaxLanes; l++) {
-        if (lanes[l] < startCol) {
-          lane = l;
-          break;
-        }
+        if (lanes[l] < startCol) { lane = l; break; }
       }
-      if (lane == -1) continue; // no room
-
+      if (lane == -1) {
+        for (int c = startCol; c <= endCol; c++) {
+          overflow[c] = (overflow[c] ?? 0) + 1;
+        }
+        continue;
+      }
       lanes[lane] = endCol;
 
       bars.add(_BarLayout(
@@ -1650,33 +1683,75 @@ class _GalaxyCalendarGrid extends StatelessWidget {
         startCol: startCol,
         endCol: endCol,
         lane: lane,
-        isStart: !evStart.isBefore(week[startCol]!),
-        isEnd: !evEnd.isAfter(week[endCol]!),
+        isStart: !evStart.isBefore(weekDates[startCol]!),
+        isEnd: !evEnd.isAfter(weekDates[endCol]!),
+        dateEvent: ev,
       ));
     }
-    return bars;
+
+    // Native calendar events — single-day, fill remaining lane slots
+    for (int col = 0; col < 7; col++) {
+      if (weekDates[col] == null) continue;
+      final natives = nativeEventsForDay(weekDates[col]!);
+      for (final nev in natives) {
+        final occupiedLanes = bars
+            .where((b) => b.startCol <= col && b.endCol >= col)
+            .map((b) => b.lane)
+            .toSet();
+        int lane = -1;
+        for (int l = 0; l < _kMaxLanes; l++) {
+          if (!occupiedLanes.contains(l)) { lane = l; break; }
+        }
+        if (lane == -1) {
+          overflow[col] = (overflow[col] ?? 0) + 1;
+          continue;
+        }
+        bars.add(_BarLayout(
+          eventId: 'native_${col}_${nev.id}',
+          title: nev.title,
+          color: const Color(0xFF8892B0),
+          startCol: col,
+          endCol: col,
+          lane: lane,
+          isStart: true,
+          isEnd: true,
+          dateEvent: null,
+        ));
+      }
+    }
+
+    return _LayoutResult(bars, overflow);
   }
 
-  Widget _buildWeekRow(BuildContext context, List<DateTime?> week, List<_BarLayout> bars) {
+  Widget _buildWeekRow(BuildContext context, List<DateTime?> week, _LayoutResult layout) {
     return SizedBox(
       height: _kRowHeight,
       child: LayoutBuilder(builder: (ctx, constraints) {
         final cellW = constraints.maxWidth / 7;
+        final selCol = week.indexWhere(
+            (d) => d != null && _norm(d) == _norm(selectedDay));
         return Stack(
           clipBehavior: Clip.none,
           children: [
-            // Layer 0: day number cells
+            // Selected column highlight
+            if (selCol >= 0)
+              Positioned(
+                left: selCol * cellW,
+                top: 0,
+                width: cellW,
+                height: _kRowHeight,
+                child: Container(color: _primary.withAlpha(18)),
+              ),
+            // Day number cells
             Row(
               children: List.generate(7, (col) {
                 final day = week[col];
                 if (day == null) return SizedBox(width: cellW);
                 final isToday = _norm(day) == _norm(DateTime.now());
-                final isSel = _norm(day) == _norm(selectedDay);
-                final isSun = col == 0;
-                final isSat = col == 6;
+                final isSel = col == selCol;
                 Color textColor = _textPrimary;
-                if (isSun) textColor = const Color(0xFFE8A598);
-                if (isSat) textColor = _primary;
+                if (col == 0) textColor = const Color(0xFFE8A598);
+                if (col == 6) textColor = _primary;
 
                 return GestureDetector(
                   onTap: () => onDaySelected(day, day),
@@ -1702,11 +1777,7 @@ class _GalaxyCalendarGrid extends StatelessWidget {
                             style: GoogleFonts.nunito(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: isSel
-                                  ? Colors.white
-                                  : isToday
-                                      ? _primary
-                                      : textColor,
+                              color: isSel ? Colors.white : isToday ? _primary : textColor,
                             ),
                           ),
                         ),
@@ -1716,8 +1787,8 @@ class _GalaxyCalendarGrid extends StatelessWidget {
                 );
               }),
             ),
-            // Layer 1: event bars
-            ...bars.map((bar) {
+            // Event bars
+            ...layout.bars.map((bar) {
               final left = bar.startCol * cellW + 1;
               final width = (bar.endCol - bar.startCol + 1) * cellW - 2;
               final top = _kDayNumHeight + bar.lane * (_kBarHeight + _kBarGap);
@@ -1728,7 +1799,9 @@ class _GalaxyCalendarGrid extends StatelessWidget {
                 height: _kBarHeight,
                 child: GestureDetector(
                   onTap: () {
-                    if (week[bar.startCol] != null) {
+                    if (bar.dateEvent != null) {
+                      onEventTap(bar.dateEvent!);
+                    } else if (week[bar.startCol] != null) {
                       onDaySelected(week[bar.startCol]!, week[bar.startCol]!);
                     }
                   },
@@ -1748,12 +1821,31 @@ class _GalaxyCalendarGrid extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 9,
+                              fontSize: 10,
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
                             ),
                           )
                         : const SizedBox.shrink(),
+                  ),
+                ),
+              );
+            }),
+            // +N overflow indicators
+            ...layout.overflow.entries.map((entry) {
+              final col = entry.key;
+              final count = entry.value;
+              return Positioned(
+                left: col * cellW,
+                bottom: 2,
+                width: cellW,
+                child: Text(
+                  '+$count',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 9,
+                    color: _textSecondary,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               );
@@ -1793,10 +1885,10 @@ class _GalaxyCalendarGrid extends StatelessWidget {
         const Divider(color: _dividerColor, height: 1),
         // Week rows
         ...weeks.map((week) {
-          final bars = _layoutBars(week);
+          final layout = _layoutBars(week);
           return Column(
             children: [
-              _buildWeekRow(context, week, bars),
+              _buildWeekRow(context, week, layout),
               const Divider(color: _dividerColor, height: 1, thickness: 0.5),
             ],
           );

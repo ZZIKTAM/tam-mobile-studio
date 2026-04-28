@@ -4,6 +4,7 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.graphics.Color
 import android.widget.RemoteViews
+import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetProvider
 import org.json.JSONArray
 import java.util.Calendar
@@ -115,16 +116,11 @@ class DateWidgetProvider : HomeWidgetProvider() {
                 views.setOnClickPendingIntent(R.id.widget_root, pi)
             }
 
-            // Tap [+] → open app with add_event signal
-            val addIntent = android.content.Intent(context, MainActivity::class.java).apply {
-                action = android.content.Intent.ACTION_VIEW
-                data = android.net.Uri.parse("homewidget://add_event")
-                flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
-                        android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
-            }
-            val addPi = android.app.PendingIntent.getActivity(
-                context, 1, addIntent,
-                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            // Tap [+] → open app via HomeWidgetLaunchIntent so widgetClicked stream fires
+            val addPi = HomeWidgetLaunchIntent.getActivity(
+                context,
+                MainActivity::class.java,
+                android.net.Uri.parse("homewidget://add_event")
             )
             views.setOnClickPendingIntent(R.id.tv_add, addPi)
 

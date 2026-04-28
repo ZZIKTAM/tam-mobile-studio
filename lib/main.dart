@@ -19,7 +19,7 @@ import 'package:device_calendar/device_calendar.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 
-const String appVersion = '0.3.11';
+const String appVersion = '0.3.12';
 
 // ── Date Feature Color Constants ──────────────────────
 const _bgCard       = Color(0xFF16213E);
@@ -1367,6 +1367,34 @@ class _CalendarTab extends StatelessWidget {
           onPageChanged: onFocusedDayChanged,
           calendarFormat: CalendarFormat.month,
           headerVisible: false,
+          calendarBuilders: CalendarBuilders(
+            markerBuilder: (context, day, events) {
+              final hasFirebase = events.isNotEmpty;
+              final hasNative = nativeEventsForDay(day).isNotEmpty;
+              if (!hasFirebase && !hasNative) return const SizedBox.shrink();
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (hasFirebase)
+                    Container(
+                      width: 6, height: 6,
+                      margin: const EdgeInsets.symmetric(horizontal: 1),
+                      decoration: const BoxDecoration(
+                        color: _accent, shape: BoxShape.circle,
+                      ),
+                    ),
+                  if (hasNative)
+                    Container(
+                      width: 6, height: 6,
+                      margin: const EdgeInsets.symmetric(horizontal: 1),
+                      decoration: const BoxDecoration(
+                        color: _textSecondary, shape: BoxShape.circle,
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
           calendarStyle: CalendarStyle(
             outsideDaysVisible: false,
             defaultTextStyle: GoogleFonts.nunito(color: _textPrimary),
@@ -1381,12 +1409,6 @@ class _CalendarTab extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             selectedTextStyle: GoogleFonts.nunito(color: Colors.white, fontWeight: FontWeight.bold),
-            markerDecoration: const BoxDecoration(
-              color: _accent,
-              shape: BoxShape.circle,
-            ),
-            markerSize: 6,
-            markersMaxCount: 3,
             cellMargin: const EdgeInsets.all(4),
           ),
           daysOfWeekStyle: DaysOfWeekStyle(

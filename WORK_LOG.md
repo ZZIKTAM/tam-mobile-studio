@@ -4,11 +4,37 @@
 없음 (대기 중)
 
 ## CURRENT STEP
-모든 작업 완료 — v0.3.3 배포됨
+모든 작업 완료 — v0.3.9 배포됨
 
 ---
 
 ## DONE
+
+### 2026-04-28 — v0.3.9 배포 완료
+- Galaxy 위젯: 단일 preview → 3줄 이벤트 목록 (tv_ev0~tv_ev2, widgetEventsJson)
+- Galaxy 위젯: 날짜 셀 탭 → 해당 날짜로 앱 네비게이션 (homewidget://open_date/YYYY-MM-DD)
+- DateWidgetProvider: 날짜 셀마다 고유 request code PendingIntent (100+idx)
+- Flutter: _handleWidgetUri로 add_event + open_date 통합 처리
+- Fix: _syncNativeCalendar per-calendar try/catch → Samsung 캘린더 provider 크래시 방어
+- GitHub Release v0.3.9 (asset: tam-studio.apk 확인)
+- Firebase app_version latest: "0.3.9" 업데이트 완료
+
+### 2026-04-28 — v0.3.8 배포 완료
+- Bug fix: WRITE_CALENDAR 권한 추가 → device_calendar.hasPermissions() 정상 반환
+- Bug fix: SettingsPage에 WidgetsBindingObserver 추가 → resume 시 권한 상태 재확인
+- Bug fix: DateWidgetProvider [+] 버튼을 HomeWidgetLaunchIntent.getActivity()로 변경 → widgetClicked 스트림 정상 전달
+- GitHub Release v0.3.8 (asset: tam-studio.apk 확인)
+- Firebase app_version latest: "0.3.8" 업데이트 완료
+
+### 2026-04-28 — v0.3.7 배포 완료
+- Phase 2: 캘린더 헤더 월 이동 화살표 + 오늘 버튼
+- Phase 2: Dismissible 스와이프 삭제, 빈 일정 empty state 개선
+- Phase 3: 홈 위젯 [+] 버튼 (PendingIntent + Flutter widgetClicked 스트림)
+- Phase 4: device_calendar 네이티브 캘린더 동기화
+- Phase 4: READ_CALENDAR 권한, SettingsPage 권한 UI
+- pubspec: device_calendar ^4.3.2, timezone ^0.9.4 추가
+- GitHub Release v0.3.7 (asset: tam-studio.apk 확인)
+- Firebase app_version latest: "0.3.7" 업데이트 완료
 
 ### 2026-04-28 — v0.3.0
 - Date 피처 전체 구현 (Calendar, EventCRUD, BucketlistCRUD)
@@ -44,12 +70,7 @@
 
 ## NEXT STEPS
 
-1. main.dart `appVersion` → '0.3.1'
-2. `flutter build apk --release`
-3. `cp app-release.apk tam-studio.apk`
-4. `gh release create v0.3.1 tam-studio.apk`
-5. Firebase app_version 업데이트 (latest: "0.3.1", apk_url 업데이트)
-6. git commit + push
+없음 (대기 중)
 
 ---
 

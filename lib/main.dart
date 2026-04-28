@@ -17,7 +17,7 @@ import 'package:home_widget/home_widget.dart';
 import 'package:device_calendar/device_calendar.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 
-const String appVersion = '0.3.14';
+const String appVersion = '0.3.15';
 
 // ── Date Feature Color Constants ──────────────────────
 const _bgCard       = Color(0xFF16213E);
@@ -1096,36 +1096,47 @@ class _DatePageState extends State<DatePage>
     }).toList();
   }
 
-  Future<void> _pushWidgetData() async {
+  Future<void> _pushWidgetData([DateTime? focused]) async {
     try {
+      final ref = focused ?? _focusedDay;
       final now = DateTime.now();
       const months = ['January','February','March','April','May','June',
                       'July','August','September','October','November','December'];
-      final monthStr = '${months[now.month - 1]} ${now.year}';
+      final monthStr = '${months[ref.month - 1]} ${ref.year}';
 
-      // Upcoming events sorted by date
-      final upcoming = _events.entries
-          .where((e) => !e.key.isBefore(_normalizeDate(now)))
+      // Upcoming events from _allEvents flat list, sorted by startDateTime
+      final todayNorm = _normalizeDate(now);
+      final upcoming = _allEvents
+          .where((ev) => !_normalizeDate(ev.startDateTime).isBefore(todayNorm))
           .toList()
-        ..sort((a, b) => a.key.compareTo(b.key));
+        ..sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
 
       // Serialize upcoming event list (max 3) for widget event rows
-      final eventsJsonList = upcoming.take(3).map((e) {
-        final ev = e.value.first;
+      final eventsJsonList = upcoming.take(3).map((ev) {
+        final d = ev.startDateTime;
         return {
-          'date': '${e.key.year}-${e.key.month.toString().padLeft(2,'0')}-${e.key.day.toString().padLeft(2,'0')}',
+          'date': '${d.year}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')}',
           'title': ev.title,
           'time': ev.time,
         };
       }).toList();
 
-      // Serialize current month dates (for calendar dot markers)
-      final thisMonthDates = _events.entries
-          .where((e) => e.key.year == now.year && e.key.month == now.month)
-          .map((e) => {
-                'date': '${e.key.year}-${e.key.month.toString().padLeft(2,'0')}-${e.key.day.toString().padLeft(2,'0')}',
-                'titles': e.value.map((ev) => ev.title).toList(),
-              })
+      // Serialize focused month dates (for calendar dot markers)
+      final thisMonthDates = _allEvents
+          .where((ev) {
+            final s = ev.startDateTime;
+            final e = ev.endDateTime;
+            // Include if any part of the event overlaps the focused month
+            return (s.year == ref.year && s.month == ref.month) ||
+                   (e.year == ref.year && e.month == ref.month);
+          })
+          .map((ev) {
+            final d = ev.startDateTime;
+            return {
+              'date': '${d.year}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')}',
+              'titles': [ev.title],
+            };
+          })
           .toList();
 
       await HomeWidget.saveWidgetData<String>('widgetMonth', monthStr);
@@ -1269,6 +1280,7 @@ class _DatePageState extends State<DatePage>
                   onFocusedDayChanged: (foc) {
                     setState(() => _focusedDay = foc);
                     if (_calPermission) _syncNativeCalendar(foc);
+                    _pushWidgetData(foc);
                   },
                   onAddEvent: _openAddEvent,
                   userKey: widget.userKey,
@@ -1326,7 +1338,17 @@ class _CalendarTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dayEvents = eventsForDay(selectedDay);
+    final dayEvents = eventsForDay(selectedDay)
+      ..sort((a, b) {
+        if (a.time.isEmpty && b.time.isEmpty) return 0;
+        if (a.time.isEmpty) return -1;
+        if (b.time.isEmpty) return 1;
+        int toMin(String t) {
+          final p = t.split(':');
+          return (int.tryParse(p[0]) ?? 0) * 60 + (int.tryParse(p.length > 1 ? p[1] : '0') ?? 0);
+        }
+        return toMin(a.time).compareTo(toMin(b.time));
+      });
     final nativeEvents = nativeEventsForDay(selectedDay);
     return Column(
       children: [
@@ -1467,10 +1489,27 @@ class _CalendarTab extends StatelessWidget {
                           ),
                           child: const Icon(Icons.delete_outline, color: Colors.white),
                         ),
-                        onDismissed: (_) {
-                          FirebaseDatabase.instance
-                              .ref('users/$userKey/dates/${ev.id}')
+                        onDismissed: (_) async {
+                          final snapshot = ev.toMap();
+                          final evId = ev.id;
+                          await FirebaseDatabase.instance
+                              .ref('users/$userKey/dates/$evId')
                               .remove();
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('"${ev.title}" 삭제됨'),
+                              duration: const Duration(seconds: 4),
+                              action: SnackBarAction(
+                                label: '실행 취소',
+                                onPressed: () {
+                                  FirebaseDatabase.instance
+                                      .ref('users/$userKey/dates/$evId')
+                                      .set(snapshot);
+                                },
+                              ),
+                            ),
+                          );
                         },
                         child: _SlideFadeItem(
                           index: i,
@@ -1600,23 +1639,20 @@ class _GalaxyCalendarGrid extends StatelessWidget {
 
   static DateTime _norm(DateTime d) => DateTime(d.year, d.month, d.day);
 
-  // Returns list of week rows: each row = list of 7 dates (null = outside month)
-  List<List<DateTime?>> _buildWeeks() {
+  // Returns list of week rows: each row = list of 7 dates (leading/trailing months included)
+  List<List<DateTime>> _buildWeeks() {
     final first = DateTime(focusedMonth.year, focusedMonth.month, 1);
     final daysInMonth = DateUtils.getDaysInMonth(focusedMonth.year, focusedMonth.month);
     final offset = first.weekday % 7; // Sun=0,Mon=1..Sat=6
     final numRows = ((offset + daysInMonth) / 7).ceil();
 
-    final weeks = <List<DateTime?>>[];
+    final weeks = <List<DateTime>>[];
     for (int row = 0; row < numRows; row++) {
-      final week = <DateTime?>[];
+      final week = <DateTime>[];
       for (int col = 0; col < 7; col++) {
         final idx = row * 7 + col;
-        if (idx < offset || idx >= offset + daysInMonth) {
-          week.add(null);
-        } else {
-          week.add(DateTime(focusedMonth.year, focusedMonth.month, idx - offset + 1));
-        }
+        // DateTime handles day overflow/underflow into adjacent months
+        week.add(DateTime(focusedMonth.year, focusedMonth.month, idx - offset + 1));
       }
       weeks.add(week);
     }
@@ -1624,10 +1660,10 @@ class _GalaxyCalendarGrid extends StatelessWidget {
   }
 
   // Compute bar layout + overflow for a week row
-  _LayoutResult _layoutBars(List<DateTime?> week) {
-    final weekDates = week.map((d) => d != null ? _norm(d) : null).toList();
-    final weekStart = weekDates.firstWhere((d) => d != null)!;
-    final weekEnd = weekDates.lastWhere((d) => d != null)!;
+  _LayoutResult _layoutBars(List<DateTime> week) {
+    final weekDates = week.map(_norm).toList();
+    final weekStart = weekDates.first;
+    final weekEnd = weekDates.last;
 
     final bars = <_BarLayout>[];
     final lanes = List<int>.filled(_kMaxLanes, -1); // high-water endCol per lane
@@ -1654,14 +1690,10 @@ class _GalaxyCalendarGrid extends StatelessWidget {
 
       int startCol = 0, endCol = 6;
       for (int c = 0; c < 7; c++) {
-        if (weekDates[c] != null && !weekDates[c]!.isBefore(evStart)) {
-          startCol = c; break;
-        }
+        if (!weekDates[c].isBefore(evStart)) { startCol = c; break; }
       }
       for (int c = 6; c >= 0; c--) {
-        if (weekDates[c] != null && !weekDates[c]!.isAfter(evEnd)) {
-          endCol = c; break;
-        }
+        if (!weekDates[c].isAfter(evEnd)) { endCol = c; break; }
       }
 
       int lane = -1;
@@ -1683,16 +1715,15 @@ class _GalaxyCalendarGrid extends StatelessWidget {
         startCol: startCol,
         endCol: endCol,
         lane: lane,
-        isStart: !evStart.isBefore(weekDates[startCol]!),
-        isEnd: !evEnd.isAfter(weekDates[endCol]!),
+        isStart: !evStart.isBefore(weekDates[startCol]),
+        isEnd: !evEnd.isAfter(weekDates[endCol]),
         dateEvent: ev,
       ));
     }
 
     // Native calendar events — single-day, fill remaining lane slots
     for (int col = 0; col < 7; col++) {
-      if (weekDates[col] == null) continue;
-      final natives = nativeEventsForDay(weekDates[col]!);
+      final natives = nativeEventsForDay(weekDates[col]);
       for (final nev in natives) {
         final occupiedLanes = bars
             .where((b) => b.startCol <= col && b.endCol >= col)
@@ -1723,18 +1754,18 @@ class _GalaxyCalendarGrid extends StatelessWidget {
     return _LayoutResult(bars, overflow);
   }
 
-  Widget _buildWeekRow(BuildContext context, List<DateTime?> week, _LayoutResult layout) {
+  Widget _buildWeekRow(BuildContext context, List<DateTime> week, _LayoutResult layout) {
     return SizedBox(
       height: _kRowHeight,
       child: LayoutBuilder(builder: (ctx, constraints) {
         final cellW = constraints.maxWidth / 7;
         final selCol = week.indexWhere(
-            (d) => d != null && _norm(d) == _norm(selectedDay));
+            (d) => _norm(d) == _norm(selectedDay));
         return Stack(
           clipBehavior: Clip.none,
           children: [
             // Selected column highlight
-            if (selCol >= 0)
+            if (selCol >= 0 && week[selCol].month == focusedMonth.month)
               Positioned(
                 left: selCol * cellW,
                 top: 0,
@@ -1746,38 +1777,42 @@ class _GalaxyCalendarGrid extends StatelessWidget {
             Row(
               children: List.generate(7, (col) {
                 final day = week[col];
-                if (day == null) return SizedBox(width: cellW);
+                final isCurrentMonth = day.month == focusedMonth.month;
                 final isToday = _norm(day) == _norm(DateTime.now());
-                final isSel = col == selCol;
-                Color textColor = _textPrimary;
-                if (col == 0) textColor = const Color(0xFFE8A598);
-                if (col == 6) textColor = _primary;
+                final isSel = col == selCol && isCurrentMonth;
+                Color textColor = isCurrentMonth ? _textPrimary : _textSecondary.withAlpha(100);
+                if (isCurrentMonth && col == 0) textColor = const Color(0xFFE8A598);
+                if (isCurrentMonth && col == 6) textColor = _primary;
 
-                return GestureDetector(
-                  onTap: () => onDaySelected(day, day),
-                  child: SizedBox(
-                    width: cellW,
-                    height: _kRowHeight,
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Container(
-                          width: 22, height: 22,
-                          alignment: Alignment.center,
-                          decoration: isSel
-                              ? const BoxDecoration(color: _primary, shape: BoxShape.circle)
-                              : isToday
-                                  ? BoxDecoration(
-                                      border: Border.all(color: _primary, width: 1.5),
-                                      shape: BoxShape.circle)
-                                  : null,
-                          child: Text(
-                            '${day.day}',
-                            style: GoogleFonts.nunito(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: isSel ? Colors.white : isToday ? _primary : textColor,
+                return Semantics(
+                  label: '${day.year}년 ${day.month}월 ${day.day}일',
+                  button: true,
+                  child: GestureDetector(
+                    onTap: () => onDaySelected(day, day),
+                    child: SizedBox(
+                      width: cellW,
+                      height: _kRowHeight,
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Container(
+                            width: 22, height: 22,
+                            alignment: Alignment.center,
+                            decoration: isSel
+                                ? const BoxDecoration(color: _primary, shape: BoxShape.circle)
+                                : isToday
+                                    ? BoxDecoration(
+                                        border: Border.all(color: _primary, width: 1.5),
+                                        shape: BoxShape.circle)
+                                    : null,
+                            child: Text(
+                              '${day.day}',
+                              style: GoogleFonts.nunito(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isSel ? Colors.white : isToday ? _primary : textColor,
+                              ),
                             ),
                           ),
                         ),
@@ -1801,8 +1836,8 @@ class _GalaxyCalendarGrid extends StatelessWidget {
                   onTap: () {
                     if (bar.dateEvent != null) {
                       onEventTap(bar.dateEvent!);
-                    } else if (week[bar.startCol] != null) {
-                      onDaySelected(week[bar.startCol]!, week[bar.startCol]!);
+                    } else {
+                      onDaySelected(week[bar.startCol], week[bar.startCol]);
                     }
                   },
                   child: Container(
@@ -2181,6 +2216,19 @@ class _EventDetailSheet extends StatelessWidget {
   final String userKey;
   const _EventDetailSheet({required this.event, required this.userKey});
 
+  static String _formatDateStr(String dateStr) {
+    try {
+      final parts = dateStr.split('-');
+      if (parts.length != 3) return dateStr;
+      final dt = DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+      const months = ['January','February','March','April','May','June',
+                      'July','August','September','October','November','December'];
+      return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+    } catch (_) {
+      return dateStr;
+    }
+  }
+
   Future<void> _delete(BuildContext ctx) async {
     final confirm = await showDialog<bool>(
       context: ctx,
@@ -2229,12 +2277,41 @@ class _EventDetailSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Text(event.formattedDate,
-                style: GoogleFonts.nunito(fontSize: 13, color: _textSecondary)),
+            Row(
+              children: [
+                Text(
+                  event.endDate != null
+                      ? '${event.formattedDate}  ~  ${_formatDateStr(event.endDate!)}'
+                      : event.formattedDate,
+                  style: GoogleFonts.nunito(fontSize: 13, color: _textSecondary),
+                ),
+                const Spacer(),
+                if (event.eventType == 'anniversary')
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: _accent.withAlpha(40),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text('기념일',
+                        style: GoogleFonts.nunito(fontSize: 11, color: _accent, fontWeight: FontWeight.w600)),
+                  ),
+              ],
+            ),
             const SizedBox(height: 6),
             Text(event.title,
                 style: GoogleFonts.playfairDisplay(
                     fontSize: 26, fontWeight: FontWeight.w700, color: _textPrimary)),
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: _primary.withAlpha(30),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(event.category,
+                  style: GoogleFonts.nunito(fontSize: 11, color: _primary, fontWeight: FontWeight.w600)),
+            ),
             const SizedBox(height: 12),
             Divider(color: _dividerColor),
             if (event.time.isNotEmpty) ...[
@@ -2409,7 +2486,12 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
         child: child!,
       ),
     );
-    if (picked != null && mounted) setState(() => _date = picked);
+    if (picked != null && mounted) {
+      setState(() {
+        _date = picked;
+        if (_endDate != null && _endDate!.isBefore(picked)) _endDate = null;
+      });
+    }
   }
 
   Future<void> _pickEndDate() async {
@@ -2478,11 +2560,17 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
       } else {
         await ref.push().set(map);
       }
-    } catch (_) {}
-
-    if (mounted) {
-      setState(() => _saving = false);
-      Navigator.pop(context);
+      if (mounted) {
+        setState(() => _saving = false);
+        Navigator.pop(context);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('저장에 실패했어요. 다시 시도해주세요.')),
+        );
+      }
     }
   }
 
@@ -3001,11 +3089,17 @@ class _AddEditBucketSheetState extends State<_AddEditBucketSheet> {
       } else {
         await ref.push().set(map);
       }
-    } catch (_) {}
-
-    if (mounted) {
-      setState(() => _saving = false);
-      Navigator.pop(context);
+      if (mounted) {
+        setState(() => _saving = false);
+        Navigator.pop(context);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('저장에 실패했어요. 다시 시도해주세요.')),
+        );
+      }
     }
   }
 

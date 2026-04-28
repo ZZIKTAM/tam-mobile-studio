@@ -120,16 +120,39 @@
         android:layout_marginTop="2dp"
         android:layout_marginBottom="2dp" />
 
-    <!-- Next event preview -->
+    <!-- Upcoming event list (3 rows) -->
     <TextView
-        android:id="@+id/tv_event_preview"
+        android:id="@+id/tv_ev0"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="일정 없음"
         android:textColor="#A78BFA"
-        android:textSize="11sp"
+        android:textSize="10sp"
         android:maxLines="1"
         android:ellipsize="end"
-        android:gravity="center" />
+        android:paddingStart="2dp"
+        android:paddingTop="1dp" />
+    <TextView
+        android:id="@+id/tv_ev1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textColor="#8892B0"
+        android:textSize="10sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:paddingStart="2dp"
+        android:paddingTop="1dp" />
+    <TextView
+        android:id="@+id/tv_ev2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textColor="#8892B0"
+        android:textSize="10sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:paddingStart="2dp"
+        android:paddingTop="1dp" />
 
 </LinearLayout>

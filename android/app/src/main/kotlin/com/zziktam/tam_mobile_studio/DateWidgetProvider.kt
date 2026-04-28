@@ -28,8 +28,8 @@ class DateWidgetProvider : HomeWidgetProvider() {
         widgetData: android.content.SharedPreferences
     ) {
         val monthStr = widgetData.getString("widgetMonth", "") ?: ""
-        val preview = widgetData.getString("widgetEventPreview", "일정 없음") ?: "일정 없음"
         val datesJson = widgetData.getString("widgetDatesJson", "[]") ?: "[]"
+        val eventsJson = widgetData.getString("widgetEventsJson", "[]") ?: "[]"
 
         // Parse stored month/year from widgetMonth (e.g. "May 2026")
         val monthNames = arrayOf("January","February","March","April","May","June",
@@ -83,9 +83,40 @@ class DateWidgetProvider : HomeWidgetProvider() {
             // Month header
             val displayMonth = monthStr.ifEmpty { "${monthNames[widgetMonth0]} $widgetYear" }
             views.setTextViewText(R.id.tv_month, displayMonth)
-            views.setTextViewText(R.id.tv_event_preview, preview)
 
-            // Fill calendar cells
+            // Upcoming event list rows (tv_ev0 ~ tv_ev2)
+            val evRowIds = intArrayOf(R.id.tv_ev0, R.id.tv_ev1, R.id.tv_ev2)
+            val evLabels = mutableListOf<String>()
+            try {
+                val evArr = JSONArray(eventsJson)
+                for (i in 0 until evArr.length()) {
+                    val obj = evArr.getJSONObject(i)
+                    val title = obj.optString("title", "")
+                    val date = obj.optString("date", "")
+                    val time = obj.optString("time", "")
+                    val dp = date.split("-")
+                    val dateLabel = if (dp.size == 3) "${dp[1]}/${dp[2]}" else ""
+                    val label = buildString {
+                        append("♥ ")
+                        if (dateLabel.isNotEmpty()) append("$dateLabel ")
+                        append(title)
+                        if (time.isNotEmpty()) append(" $time")
+                    }
+                    evLabels.add(label)
+                }
+            } catch (_: Exception) {}
+            for (i in evRowIds.indices) {
+                if (i < evLabels.size) {
+                    views.setTextViewText(evRowIds[i], evLabels[i])
+                    val c = if (i == 0) Color.parseColor("#A78BFA") else Color.parseColor("#8892B0")
+                    views.setTextColor(evRowIds[i], c)
+                } else {
+                    views.setTextViewText(evRowIds[i], if (i == 0) "일정 없음" else "")
+                    views.setTextColor(evRowIds[i], Color.parseColor("#4A5568"))
+                }
+            }
+
+            // Fill calendar cells + date-tap PendingIntents
             var day = 1
             for (idx in 0 until 42) {
                 val cellId = cellIds[idx]
@@ -102,6 +133,17 @@ class DateWidgetProvider : HomeWidgetProvider() {
                         else -> Color.parseColor("#CDD6F4")           // normal
                     }
                     views.setTextColor(cellId, color)
+                    // Tap cell → open app at that date
+                    val dateStr = "%04d-%02d-%02d".format(widgetYear, widgetMonth0 + 1, day)
+                    val dayIntent = android.content.Intent(context, MainActivity::class.java).apply {
+                        action = "es.antonborri.home_widget.action.LAUNCH"
+                        data = android.net.Uri.parse("homewidget://open_date/$dateStr")
+                    }
+                    val dayPi = android.app.PendingIntent.getActivity(
+                        context, 100 + idx, dayIntent,
+                        android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+                    )
+                    views.setOnClickPendingIntent(cellId, dayPi)
                     day++
                 }
             }

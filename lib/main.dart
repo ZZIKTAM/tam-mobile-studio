@@ -19,7 +19,7 @@ import 'package:device_calendar/device_calendar.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 
-const String appVersion = '0.3.8';
+const String appVersion = '0.3.9';
 
 // ── Date Feature Color Constants ──────────────────────
 const _bgCard       = Color(0xFF16213E);
@@ -1090,18 +1090,23 @@ class _DatePageState extends State<DatePage>
                       'July','August','September','October','November','December'];
       final monthStr = '${months[now.month - 1]} ${now.year}';
 
-      // Find next upcoming event
-      String preview = '일정 없음';
+      // Upcoming events sorted by date
       final upcoming = _events.entries
           .where((e) => !e.key.isBefore(_normalizeDate(now)))
           .toList()
         ..sort((a, b) => a.key.compareTo(b.key));
-      if (upcoming.isNotEmpty) {
-        final next = upcoming.first.value.first;
-        preview = '♥ 다음: ${next.title}${next.time.isNotEmpty ? " ${next.time}" : ""}';
-      }
 
-      // Serialize current month dates
+      // Serialize upcoming event list (max 3) for widget event rows
+      final eventsJsonList = upcoming.take(3).map((e) {
+        final ev = e.value.first;
+        return {
+          'date': '${e.key.year}-${e.key.month.toString().padLeft(2,'0')}-${e.key.day.toString().padLeft(2,'0')}',
+          'title': ev.title,
+          'time': ev.time,
+        };
+      }).toList();
+
+      // Serialize current month dates (for calendar dot markers)
       final thisMonthDates = _events.entries
           .where((e) => e.key.year == now.year && e.key.month == now.month)
           .map((e) => {
@@ -1111,7 +1116,7 @@ class _DatePageState extends State<DatePage>
           .toList();
 
       await HomeWidget.saveWidgetData<String>('widgetMonth', monthStr);
-      await HomeWidget.saveWidgetData<String>('widgetEventPreview', preview);
+      await HomeWidget.saveWidgetData<String>('widgetEventsJson', jsonEncode(eventsJsonList));
       await HomeWidget.saveWidgetData<String>('widgetDatesJson', jsonEncode(thisMonthDates));
       await HomeWidget.updateWidget(name: 'DateWidgetProvider', iOSName: 'DateWidget');
     } catch (e) {
@@ -1119,18 +1124,32 @@ class _DatePageState extends State<DatePage>
     }
   }
 
+  void _handleWidgetUri(Uri? uri) {
+    if (uri == null || !mounted) return;
+    if (uri.host == 'add_event') {
+      _openAddEvent();
+    } else if (uri.host == 'open_date') {
+      final dateStr = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+      if (dateStr != null) {
+        final date = DateTime.tryParse(dateStr);
+        if (date != null) {
+          setState(() {
+            _selectedDay = date;
+            _focusedDay = date;
+          });
+        }
+      }
+    }
+  }
+
   Future<void> _initWidgetClicked() async {
-    // Cold start: app launched via widget [+] button
+    // Cold start: app launched via widget tap
     final uri = await HomeWidget.initiallyLaunchedFromHomeWidget();
-    if (uri != null && uri.host == 'add_event' && mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _openAddEvent());
+    if (uri != null && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _handleWidgetUri(uri));
     }
     // Hot start: app already running
-    _widgetSub = HomeWidget.widgetClicked.listen((uri) {
-      if (uri != null && uri.host == 'add_event' && mounted) {
-        _openAddEvent();
-      }
-    });
+    _widgetSub = HomeWidget.widgetClicked.listen(_handleWidgetUri);
   }
 
   Future<void> _syncNativeCalendar([DateTime? month]) async {
@@ -1158,20 +1177,25 @@ class _DatePageState extends State<DatePage>
       final newNative = <DateTime, List<NativeCalendarEvent>>{};
       for (final cal in calsResult.data!) {
         if (cal.id == null) continue;
-        final evResult = await _calPlugin.retrieveEvents(
-          cal.id,
-          RetrieveEventsParams(startDate: start, endDate: end),
-        );
-        if (!evResult.isSuccess || evResult.data == null) continue;
-        for (final ev in evResult.data!) {
-          if (ev.start == null) continue;
-          final day = _normalizeDate(ev.start!.toLocal());
-          if (day.year != target.year || day.month != target.month) continue;
-          newNative.putIfAbsent(day, () => []).add(NativeCalendarEvent(
-            id: ev.eventId ?? '',
-            title: ev.title ?? '(제목 없음)',
-            start: ev.start!.toLocal(),
-          ));
+        try {
+          final evResult = await _calPlugin.retrieveEvents(
+            cal.id,
+            RetrieveEventsParams(startDate: start, endDate: end),
+          );
+          if (!evResult.isSuccess || evResult.data == null) continue;
+          for (final ev in evResult.data!) {
+            if (ev.start == null) continue;
+            final day = _normalizeDate(ev.start!.toLocal());
+            if (day.year != target.year || day.month != target.month) continue;
+            newNative.putIfAbsent(day, () => []).add(NativeCalendarEvent(
+              id: ev.eventId ?? '',
+              title: ev.title ?? '(제목 없음)',
+              start: ev.start!.toLocal(),
+            ));
+          }
+        } catch (_) {
+          // Skip problematic calendar providers (e.g. Samsung Cloud)
+          continue;
         }
       }
       if (mounted) setState(() => _nativeEvents = newNative);

@@ -19,7 +19,7 @@ import 'package:device_calendar/device_calendar.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 
-const String appVersion = '0.3.10';
+const String appVersion = '0.3.11';
 
 // ── Date Feature Color Constants ──────────────────────
 const _bgCard       = Color(0xFF16213E);

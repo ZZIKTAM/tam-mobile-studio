@@ -26,7 +26,7 @@ class DateWidgetProvider : HomeWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
         widgetData: android.content.SharedPreferences
-    ) {
+    ) { try {
         val monthStr = widgetData.getString("widgetMonth", "") ?: ""
         val datesJson = widgetData.getString("widgetDatesJson", "[]") ?: "[]"
         val eventsJson = widgetData.getString("widgetEventsJson", "[]") ?: "[]"
@@ -168,5 +168,5 @@ class DateWidgetProvider : HomeWidgetProvider() {
 
             appWidgetManager.updateAppWidget(id, views)
         }
-    }
+    } catch (_: Throwable) {} }
 }

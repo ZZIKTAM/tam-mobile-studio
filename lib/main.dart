@@ -16,7 +16,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:home_widget/home_widget.dart';
 
-const String appVersion = '0.3.2';
+const String appVersion = '0.3.3';
 
 // ── Date Feature Color Constants ──────────────────────
 const _bgCard       = Color(0xFF16213E);
@@ -323,6 +323,7 @@ class _DropTrackerPageState extends State<DropTrackerPage> {
   DateTime _lastServerTime = DateTime.now();
   List<Map<String, dynamic>> _items = [];
   Timer? _refreshTimer;
+  StreamSubscription<DatabaseEvent>? _dropSub;
 
   @override
   void initState() {
@@ -338,7 +339,8 @@ class _DropTrackerPageState extends State<DropTrackerPage> {
     });
 
     final ref = FirebaseDatabase.instance.ref('users/${widget.userKey}/drops');
-    ref.onValue.listen((event) {
+    _dropSub = ref.onValue.listen((event) {
+      if (!mounted) return;
       final data = event.snapshot.value;
       if (data == null) return;
       if (data is Map) {
@@ -361,6 +363,7 @@ class _DropTrackerPageState extends State<DropTrackerPage> {
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _dropSub?.cancel();
     super.dispose();
   }
 
@@ -489,6 +492,7 @@ class _ChatSendPageState extends State<ChatSendPage> {
   List<Map<String, dynamic>> _chatMessages = [];
   String _filterChannel = 'ALL';
   bool _sending = false;
+  StreamSubscription<DatabaseEvent>? _chatSub;
 
   static const Map<String, Color> channelColors = {
     '월드': Color(0xFFE88BA7),
@@ -506,7 +510,8 @@ class _ChatSendPageState extends State<ChatSendPage> {
     super.initState();
     // Subscribe to game chat from PC
     final ref = FirebaseDatabase.instance.ref('users/${widget.userKey}/chat');
-    ref.onValue.listen((event) {
+    _chatSub = ref.onValue.listen((event) {
+      if (!mounted) return;
       final data = event.snapshot.value;
       if (data == null) {
         setState(() => _chatMessages = []);
@@ -571,6 +576,7 @@ class _ChatSendPageState extends State<ChatSendPage> {
 
   @override
   void dispose() {
+    _chatSub?.cancel();
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();

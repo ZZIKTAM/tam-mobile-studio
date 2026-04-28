@@ -95,8 +95,8 @@
         <TextView android:id="@+id/tv_d41" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
     </LinearLayout>
 
-    <!-- Divider -->
-    <View
+    <!-- Divider (ImageView: RemoteViews does not support plain <View>) -->
+    <ImageView
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="#2D3A5C"

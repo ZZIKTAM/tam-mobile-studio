@@ -19,7 +19,7 @@ import 'package:device_calendar/device_calendar.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 
-const String appVersion = '0.3.9';
+const String appVersion = '0.3.10';
 
 // ── Date Feature Color Constants ──────────────────────
 const _bgCard       = Color(0xFF16213E);
@@ -1152,8 +1152,13 @@ class _DatePageState extends State<DatePage>
     _widgetSub = HomeWidget.widgetClicked.listen(_handleWidgetUri);
   }
 
+  // Direct MethodChannel bridge — bypasses device_calendar's Samsung-crashing projection
+  static const _calChannel = MethodChannel('tam/native_calendar');
+
   Future<void> _syncNativeCalendar([DateTime? month]) async {
     final target = month ?? _focusedDay;
+
+    // Permission check via device_calendar (stable — only crashes on retrieveCalendars/Events)
     bool hasPermission = false;
     try {
       final hasResult = await _calPlugin.hasPermissions();
@@ -1166,38 +1171,42 @@ class _DatePageState extends State<DatePage>
     if (!hasPermission) return;
     if (mounted && !_calPermission) setState(() => _calPermission = true);
 
+    // Use our own MethodChannel bridge (Samsung-safe projection, catch Throwable on native side)
     try {
-      final calsResult = await _calPlugin.retrieveCalendars();
-      if (!calsResult.isSuccess || calsResult.data == null) return;
+      final startMs = DateTime(target.year, target.month, 1).millisecondsSinceEpoch;
+      final endMs = DateTime(target.year, target.month + 1, 1)
+          .subtract(const Duration(milliseconds: 1))
+          .millisecondsSinceEpoch;
 
-      final start = tz.TZDateTime.utc(target.year, target.month, 1);
-      final end = tz.TZDateTime.utc(target.year, target.month + 1, 1)
-          .subtract(const Duration(seconds: 1));
-
+      final cals = await _calChannel.invokeListMethod<Map>('listCalendars') ?? [];
       final newNative = <DateTime, List<NativeCalendarEvent>>{};
-      for (final cal in calsResult.data!) {
-        if (cal.id == null) continue;
+
+      for (final cal in cals) {
+        final calId = cal['id'] as String? ?? '';
+        if (calId.isEmpty) continue;
         try {
-          final evResult = await _calPlugin.retrieveEvents(
-            cal.id,
-            RetrieveEventsParams(startDate: start, endDate: end),
-          );
-          if (!evResult.isSuccess || evResult.data == null) continue;
-          for (final ev in evResult.data!) {
-            if (ev.start == null) continue;
-            final day = _normalizeDate(ev.start!.toLocal());
+          final evs = await _calChannel.invokeListMethod<Map>('listEvents', {
+            'calendarId': calId,
+            'startMs': startMs,
+            'endMs': endMs,
+          }) ?? [];
+          for (final ev in evs) {
+            final startEpoch = ev['startMs'] as int?;
+            if (startEpoch == null) continue;
+            final evStart = DateTime.fromMillisecondsSinceEpoch(startEpoch);
+            final day = _normalizeDate(evStart);
             if (day.year != target.year || day.month != target.month) continue;
             newNative.putIfAbsent(day, () => []).add(NativeCalendarEvent(
-              id: ev.eventId ?? '',
-              title: ev.title ?? '(제목 없음)',
-              start: ev.start!.toLocal(),
+              id: ev['id'] as String? ?? '',
+              title: ev['title'] as String? ?? '(제목 없음)',
+              start: evStart,
             ));
           }
         } catch (_) {
-          // Skip problematic calendar providers (e.g. Samsung Cloud)
-          continue;
+          continue; // skip this calendar on any error
         }
       }
+
       if (mounted) setState(() => _nativeEvents = newNative);
     } catch (e) {
       debugPrint('Native calendar sync failed: $e');

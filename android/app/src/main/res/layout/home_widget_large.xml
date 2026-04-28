@@ -7,17 +7,34 @@
     android:background="@drawable/widget_bg"
     android:padding="8dp">
 
-    <!-- Month header -->
-    <TextView
-        android:id="@+id/tv_month"
+    <!-- Month header row -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="April 2026"
-        android:textColor="#F0EAF8"
-        android:textSize="13sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:paddingBottom="4dp" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="4dp">
+        <TextView
+            android:id="@+id/tv_month"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="April 2026"
+            android:textColor="#F0EAF8"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+        <TextView
+            android:id="@+id/tv_add"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=" + "
+            android:textColor="#A78BFA"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:paddingStart="4dp"
+            android:paddingEnd="2dp" />
+    </LinearLayout>
 
     <!-- Day-of-week headers: 일 월 화 수 목 금 토 -->
     <LinearLayout

@@ -105,7 +105,7 @@ class DateWidgetProvider : HomeWidgetProvider() {
                 }
             }
 
-            // Tap → open app
+            // Tap widget body → open app
             val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
             if (intent != null) {
                 val pi = android.app.PendingIntent.getActivity(
@@ -114,6 +114,19 @@ class DateWidgetProvider : HomeWidgetProvider() {
                 )
                 views.setOnClickPendingIntent(R.id.widget_root, pi)
             }
+
+            // Tap [+] → open app with add_event signal
+            val addIntent = android.content.Intent(context, MainActivity::class.java).apply {
+                action = android.content.Intent.ACTION_VIEW
+                data = android.net.Uri.parse("homewidget://add_event")
+                flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
+                        android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
+            val addPi = android.app.PendingIntent.getActivity(
+                context, 1, addIntent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            )
+            views.setOnClickPendingIntent(R.id.tv_add, addPi)
 
             appWidgetManager.updateAppWidget(id, views)
         }

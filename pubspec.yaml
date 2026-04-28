@@ -43,6 +43,8 @@ dependencies:
   google_fonts: ^6.2.1
   table_calendar: ^3.1.2
   home_widget: ^0.6.0
+  device_calendar: ^4.3.2
+  timezone: ^0.9.4
 
 dev_dependencies:
   flutter_test:
@@ -66,11 +68,7 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  assets:
-    - assets/item_icons.json
-    - assets/chat_stickers.json
-    - assets/icons/
-    - assets/emojis/
+  # assets: (none currently needed)
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -1,13 +1,10 @@
 # WORK_LOG — tam-mobile-studio
 
 ## CURRENT TASK
-버전 0.3.1 빌드 및 배포 (위젯 수정사항 포함)
+없음 (대기 중)
 
 ## CURRENT STEP
-1. [DONE] 위젯 파일 수정 (home_widget_large.xml, date_widget_info.xml, DateWidgetProvider.kt)
-2. [DONE] Firebase 테스트 데이터 삽입 (4월 2026, 5개 이벤트 + 3개 버킷리스트)
-3. [DONE] v0.3.0 빌드/배포 (date feature 포함)
-4. [PENDING] v0.3.1 appVersion 업데이트 → 빌드 → GitHub Release → Firebase app_version
+모든 작업 완료 — v0.3.3 배포됨
 
 ---
 
@@ -20,11 +17,19 @@
 - Android 홈 위젯 초기 구현 (DateWidgetProvider)
 - GitHub Release v0.3.0 배포 완료
 
-### 2026-04-28 — 위젯 버그 수정
+### 2026-04-28 — v0.3.3 배포 완료
+- CRITICAL: _DropTrackerPageState Firebase 구독 누수 수정 (_dropSub 저장, dispose()에서 cancel(), mounted 체크)
+- WARNING: _ChatSendPageState 동일 패턴 수정 (_chatSub 저장, dispose()에서 cancel(), mounted 체크)
+- GitHub Release v0.3.3 (asset: tam-studio.apk 확인)
+- Firebase app_version latest: "0.3.3" 업데이트 완료
+
+### 2026-04-28 — v0.3.1 배포 완료
 - "표시할 수 없음" 원인: fontFamily="serif" → 제거
 - 5×6 리사이즈: maxResize 500dp, targetCellWidth/Height 5×6
 - 캘린더 그리드: 42 TextView 하드코딩 (tv_d00~tv_d41)
 - Firebase 테스트 데이터 삽입 완료
+- GitHub Release v0.3.1 (asset: tam-studio.apk 확인)
+- Firebase app_version latest: "0.3.1" 업데이트 완료
 
 ---
 

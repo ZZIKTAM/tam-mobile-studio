@@ -17,11 +17,11 @@ import 'package:home_widget/home_widget.dart';
 import 'package:device_calendar/device_calendar.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 
-const String appVersion = '0.4.0';
+const String appVersion = '0.4.1';
 
 // ── Date Feature Color Constants ──────────────────────
-const _bgCard        = Color(0xFF241D1A);
-const _bgElevated    = Color(0xFF312724);
+const _bgCard        = Color(0xFF362720);
+const _bgElevated    = Color(0xFF422D25);
 const _accent        = Color(0xFFF28C6B); // warm orange-salmon
 const _success       = Color(0xFF6EE7B7); // mint
 const _textPrimary   = Color(0xFFF5EBDD); // cream/ivory
@@ -55,10 +55,10 @@ class TamStudioApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.dark(
-          surface: const Color(0xFF191513),
+          surface: const Color(0xFF2B1F18),
           primary: const Color(0xFFF28C6B),
         ),
-        scaffoldBackgroundColor: const Color(0xFF191513),
+        scaffoldBackgroundColor: const Color(0xFF2B1F18),
         useMaterial3: true,
       ),
       home: const KeyGatePage(),
@@ -1305,7 +1305,7 @@ class _DatePageState extends State<DatePage>
   }
 }
 
-class _CalendarTab extends StatelessWidget {
+class _CalendarTab extends StatefulWidget {
   final DateTime selectedDay;
   final DateTime focusedDay;
   final List<DateEvent> allEvents;
@@ -1330,6 +1330,14 @@ class _CalendarTab extends StatelessWidget {
     required this.onEventTap,
   });
 
+  @override
+  State<_CalendarTab> createState() => _CalendarTabState();
+}
+
+class _CalendarTabState extends State<_CalendarTab> {
+  double? _swipeStartDx;
+  int? _swipeStartMs;
+
   String _monthTitle(DateTime d) {
     const months = ['January','February','March','April','May','June',
                     'July','August','September','October','November','December'];
@@ -1338,7 +1346,7 @@ class _CalendarTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dayEvents = eventsForDay(selectedDay)
+    final dayEvents = widget.eventsForDay(widget.selectedDay)
       ..sort((a, b) {
         if (a.time.isEmpty && b.time.isEmpty) return 0;
         if (a.time.isEmpty) return -1;
@@ -1349,7 +1357,7 @@ class _CalendarTab extends StatelessWidget {
         }
         return toMin(a.time).compareTo(toMin(b.time));
       });
-    final nativeEvents = nativeEventsForDay(selectedDay);
+    final nativeEvents = widget.nativeEventsForDay(widget.selectedDay);
     return Column(
       children: [
         // Custom Header
@@ -1359,13 +1367,13 @@ class _CalendarTab extends StatelessWidget {
             children: [
               IconButton(
                 icon: const Icon(Icons.chevron_left, color: _textSecondary),
-                onPressed: () => onFocusedDayChanged(
-                    DateTime(focusedDay.year, focusedDay.month - 1, 1)),
+                onPressed: () => widget.onFocusedDayChanged(
+                    DateTime(widget.focusedDay.year, widget.focusedDay.month - 1, 1)),
                 visualDensity: VisualDensity.compact,
               ),
               Expanded(
                 child: Text(
-                  _monthTitle(focusedDay),
+                  _monthTitle(widget.focusedDay),
                   textAlign: TextAlign.center,
                   style: GoogleFonts.notoSansKr(
                     fontSize: 20,
@@ -1376,14 +1384,14 @@ class _CalendarTab extends StatelessWidget {
               ),
               IconButton(
                 icon: const Icon(Icons.chevron_right, color: _textSecondary),
-                onPressed: () => onFocusedDayChanged(
-                    DateTime(focusedDay.year, focusedDay.month + 1, 1)),
+                onPressed: () => widget.onFocusedDayChanged(
+                    DateTime(widget.focusedDay.year, widget.focusedDay.month + 1, 1)),
                 visualDensity: VisualDensity.compact,
               ),
               TextButton(
                 onPressed: () {
                   final now = DateTime.now();
-                  onDaySelected(now, now);
+                  widget.onDaySelected(now, now);
                 },
                 style: TextButton.styleFrom(
                   foregroundColor: _primary,
@@ -1394,30 +1402,44 @@ class _CalendarTab extends StatelessWidget {
               ),
               IconButton(
                 icon: const Icon(Icons.add_circle_outline, color: _primary),
-                onPressed: onAddEvent,
+                onPressed: widget.onAddEvent,
                 tooltip: '이벤트 추가',
                 visualDensity: VisualDensity.compact,
               ),
             ],
           ),
         ),
-        // Galaxy-style calendar grid (swipe left/right to change month)
-        GestureDetector(
-          onHorizontalDragEnd: (details) {
-            final v = details.primaryVelocity ?? 0;
-            if (v < -300) {
-              onFocusedDayChanged(DateTime(focusedDay.year, focusedDay.month + 1, 1));
-            } else if (v > 300) {
-              onFocusedDayChanged(DateTime(focusedDay.year, focusedDay.month - 1, 1));
+        // Galaxy-style calendar grid (swipe left/right — raw pointer, no gesture arena conflict)
+        Listener(
+          onPointerDown: (e) {
+            _swipeStartDx = e.position.dx;
+            _swipeStartMs = DateTime.now().millisecondsSinceEpoch;
+          },
+          onPointerUp: (e) {
+            if (_swipeStartDx == null || _swipeStartMs == null) return;
+            final dx = e.position.dx - _swipeStartDx!;
+            final dt = DateTime.now().millisecondsSinceEpoch - _swipeStartMs!;
+            _swipeStartDx = null;
+            _swipeStartMs = null;
+            if (dt == 0) return;
+            final velocity = dx / dt * 1000;
+            if (velocity < -300) {
+              widget.onFocusedDayChanged(DateTime(widget.focusedDay.year, widget.focusedDay.month + 1, 1));
+            } else if (velocity > 300) {
+              widget.onFocusedDayChanged(DateTime(widget.focusedDay.year, widget.focusedDay.month - 1, 1));
             }
           },
+          onPointerCancel: (_) {
+            _swipeStartDx = null;
+            _swipeStartMs = null;
+          },
           child: _GalaxyCalendarGrid(
-            focusedMonth: focusedDay,
-            selectedDay: selectedDay,
-            allEvents: allEvents,
-            nativeEventsForDay: nativeEventsForDay,
-            onDaySelected: onDaySelected,
-            onEventTap: onEventTap,
+            focusedMonth: widget.focusedDay,
+            selectedDay: widget.selectedDay,
+            allEvents: widget.allEvents,
+            nativeEventsForDay: widget.nativeEventsForDay,
+            onDaySelected: widget.onDaySelected,
+            onEventTap: widget.onEventTap,
           ),
         ),
         Divider(color: _dividerColor, height: 1),
@@ -1427,7 +1449,7 @@ class _CalendarTab extends StatelessWidget {
           child: Row(
             children: [
               Text(
-                '${selectedDay.month}월 ${selectedDay.day}일',
+                '${widget.selectedDay.month}월 ${widget.selectedDay.day}일',
                 style: GoogleFonts.notoSansKr(
                   fontSize: 13,
                   color: _textSecondary,
@@ -1461,7 +1483,7 @@ class _CalendarTab extends StatelessWidget {
                           style: GoogleFonts.notoSansKr(color: _textSecondary, fontSize: 13)),
                       const SizedBox(height: 4),
                       TextButton.icon(
-                        onPressed: onAddEvent,
+                        onPressed: widget.onAddEvent,
                         icon: const Icon(Icons.add, size: 16),
                         label: const Text('추가하기', style: TextStyle(fontSize: 13)),
                         style: TextButton.styleFrom(foregroundColor: _primary),
@@ -1493,7 +1515,7 @@ class _CalendarTab extends StatelessWidget {
                           final snapshot = ev.toMap();
                           final evId = ev.id;
                           await FirebaseDatabase.instance
-                              .ref('users/$userKey/dates/$evId')
+                              .ref('users/${widget.userKey}/dates/$evId')
                               .remove();
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -1504,7 +1526,7 @@ class _CalendarTab extends StatelessWidget {
                                 label: '실행 취소',
                                 onPressed: () {
                                   FirebaseDatabase.instance
-                                      .ref('users/$userKey/dates/$evId')
+                                      .ref('users/${widget.userKey}/dates/$evId')
                                       .set(snapshot);
                                 },
                               ),
@@ -1523,7 +1545,7 @@ class _CalendarTab extends StatelessWidget {
                                 context: context,
                                 isScrollControlled: true,
                                 backgroundColor: Colors.transparent,
-                                builder: (_) => _EventDetailSheet(event: ev, userKey: userKey),
+                                builder: (_) => _EventDetailSheet(event: ev, userKey: widget.userKey),
                               );
                             },
                           ),
@@ -1660,13 +1682,13 @@ class _GalaxyCalendarGrid extends StatelessWidget {
   }
 
   // Compute bar layout + overflow for a week row
-  _LayoutResult _layoutBars(List<DateTime> week) {
+  _LayoutResult _layoutBars(List<DateTime> week, {int maxLanes = _kMaxLanes}) {
     final weekDates = week.map(_norm).toList();
     final weekStart = weekDates.first;
     final weekEnd = weekDates.last;
 
     final bars = <_BarLayout>[];
-    final lanes = List<int>.filled(_kMaxLanes, -1); // high-water endCol per lane
+    final lanes = List<int>.filled(maxLanes, -1); // high-water endCol per lane
     final overflow = <int, int>{};
 
     // Firebase events — sorted by start, longer first
@@ -1697,7 +1719,7 @@ class _GalaxyCalendarGrid extends StatelessWidget {
       }
 
       int lane = -1;
-      for (int l = 0; l < _kMaxLanes; l++) {
+      for (int l = 0; l < maxLanes; l++) {
         if (lanes[l] < startCol) { lane = l; break; }
       }
       if (lane == -1) {
@@ -1730,7 +1752,7 @@ class _GalaxyCalendarGrid extends StatelessWidget {
             .map((b) => b.lane)
             .toSet();
         int lane = -1;
-        for (int l = 0; l < _kMaxLanes; l++) {
+        for (int l = 0; l < maxLanes; l++) {
           if (!occupiedLanes.contains(l)) { lane = l; break; }
         }
         if (lane == -1) {
@@ -1754,9 +1776,9 @@ class _GalaxyCalendarGrid extends StatelessWidget {
     return _LayoutResult(bars, overflow);
   }
 
-  Widget _buildWeekRow(BuildContext context, List<DateTime> week, _LayoutResult layout) {
+  Widget _buildWeekRow(BuildContext context, List<DateTime> week, _LayoutResult layout, {double rowHeight = _kRowHeight}) {
     return SizedBox(
-      height: _kRowHeight,
+      height: rowHeight,
       child: LayoutBuilder(builder: (ctx, constraints) {
         final cellW = constraints.maxWidth / 7;
         final selCol = week.indexWhere(
@@ -1770,7 +1792,7 @@ class _GalaxyCalendarGrid extends StatelessWidget {
                 left: selCol * cellW,
                 top: 0,
                 width: cellW,
-                height: _kRowHeight,
+                height: rowHeight,
                 child: Container(color: _primary.withAlpha(18)),
               ),
             // Day number cells
@@ -1791,7 +1813,7 @@ class _GalaxyCalendarGrid extends StatelessWidget {
                     onTap: () => onDaySelected(day, day),
                     child: SizedBox(
                       width: cellW,
-                      height: _kRowHeight,
+                      height: rowHeight,
                       child: Align(
                         alignment: Alignment.topCenter,
                         child: Padding(
@@ -1919,15 +1941,20 @@ class _GalaxyCalendarGrid extends StatelessWidget {
         ),
         const Divider(color: _dividerColor, height: 1),
         // Week rows
-        ...weeks.map((week) {
-          final layout = _layoutBars(week);
-          return Column(
-            children: [
-              _buildWeekRow(context, week, layout),
-              const Divider(color: _dividerColor, height: 1, thickness: 0.5),
-            ],
-          );
-        }),
+        ...() {
+          final is6Row = weeks.length > 5;
+          final effectiveMaxLanes = is6Row ? 2 : _kMaxLanes;
+          final effectiveRowH = _kDayNumHeight + effectiveMaxLanes * (_kBarHeight + _kBarGap) + 6.0;
+          return weeks.map((week) {
+            final layout = _layoutBars(week, maxLanes: effectiveMaxLanes);
+            return Column(
+              children: [
+                _buildWeekRow(context, week, layout, rowHeight: effectiveRowH),
+                const Divider(color: _dividerColor, height: 1, thickness: 0.5),
+              ],
+            );
+          });
+        }(),
       ],
     );
   }

@@ -290,8 +290,8 @@ class _HomePageState extends State<HomePage> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentTab,
         onDestinationSelected: (i) => setState(() => _currentTab = i),
-        backgroundColor: const Color(0xFF191513),
-        indicatorColor: const Color(0xFF312724),
+        backgroundColor: const Color(0xFF2B1F18),
+        indicatorColor: _bgElevated,
         destinations: const [
           NavigationDestination(icon: Icon(Icons.calendar_month), label: '데이트'),
           NavigationDestination(icon: Icon(Icons.settings), label: '설정'),
@@ -358,7 +358,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF241D1A),
+        backgroundColor: _bgCard,
         title: const Text('연동 해제', style: TextStyle(color: Colors.white)),
         content: const Text('Google 계정 연동을 해제하면 다시 로그인해야 합니다.', style: TextStyle(color: Colors.white70)),
         actions: [
@@ -1253,7 +1253,7 @@ class _DatePageState extends State<DatePage>
         children: [
           // Tab bar: [캘린더 | 버킷리스트]
           Container(
-            color: const Color(0xFF191513),
+            color: const Color(0xFF2B1F18),
             child: TabBar(
               controller: _tabCtrl,
               labelColor: _primary,
@@ -1335,6 +1335,7 @@ class _CalendarTab extends StatefulWidget {
 }
 
 class _CalendarTabState extends State<_CalendarTab> {
+  int? _swipePointerId;
   double? _swipeStartDx;
   int? _swipeStartMs;
 
@@ -1412,16 +1413,20 @@ class _CalendarTabState extends State<_CalendarTab> {
         // Galaxy-style calendar grid (swipe left/right — raw pointer, no gesture arena conflict)
         Listener(
           onPointerDown: (e) {
+            if (_swipePointerId != null) return; // ignore secondary fingers
+            _swipePointerId = e.pointer;
             _swipeStartDx = e.position.dx;
             _swipeStartMs = DateTime.now().millisecondsSinceEpoch;
           },
           onPointerUp: (e) {
+            if (e.pointer != _swipePointerId) return;
             if (_swipeStartDx == null || _swipeStartMs == null) return;
             final dx = e.position.dx - _swipeStartDx!;
             final dt = DateTime.now().millisecondsSinceEpoch - _swipeStartMs!;
+            _swipePointerId = null;
             _swipeStartDx = null;
             _swipeStartMs = null;
-            if (dt == 0) return;
+            if (dt == 0 || dx.abs() < 20) return; // ignore micro-movements
             final velocity = dx / dt * 1000;
             if (velocity < -300) {
               widget.onFocusedDayChanged(DateTime(widget.focusedDay.year, widget.focusedDay.month + 1, 1));
@@ -1429,7 +1434,9 @@ class _CalendarTabState extends State<_CalendarTab> {
               widget.onFocusedDayChanged(DateTime(widget.focusedDay.year, widget.focusedDay.month - 1, 1));
             }
           },
-          onPointerCancel: (_) {
+          onPointerCancel: (e) {
+            if (e.pointer != _swipePointerId) return;
+            _swipePointerId = null;
             _swipeStartDx = null;
             _swipeStartMs = null;
           },
@@ -2279,7 +2286,7 @@ class _EventDetailSheet extends StatelessWidget {
     final confirm = await showDialog<bool>(
       context: ctx,
       builder: (c) => AlertDialog(
-        backgroundColor: const Color(0xFF241D1A),
+        backgroundColor: _bgCard,
         title: const Text('삭제', style: TextStyle(color: Colors.white)),
         content: Text('"${event.title}" 을(를) 삭제할까요?',
             style: const TextStyle(color: Colors.white70)),
@@ -2919,7 +2926,7 @@ class _BucketDetailSheet extends StatelessWidget {
     final confirm = await showDialog<bool>(
       context: ctx,
       builder: (c) => AlertDialog(
-        backgroundColor: const Color(0xFF241D1A),
+        backgroundColor: _bgCard,
         title: const Text('삭제', style: TextStyle(color: Colors.white)),
         content: Text('"${item.title}" 을(를) 삭제할까요?',
             style: const TextStyle(color: Colors.white70)),

@@ -12,12 +12,11 @@ import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:device_calendar/device_calendar.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 
-const String appVersion = '0.4.2';
+const String appVersion = '0.4.3';
 
 // ── Claude Design System — Dark Surfaces ──────────────
 const _bgCard        = Color(0xFF1F1E1B); // surface-dark-soft
@@ -197,7 +196,7 @@ class _KeyGatePageState extends State<KeyGatePage> {
                 child: const Center(child: Text('🎮', style: TextStyle(fontSize: 36))),
               ),
               const SizedBox(height: 20),
-              Text('Tam Studio', style: GoogleFonts.cormorantGaramond(fontSize: 28, fontWeight: FontWeight.w600, color: Colors.white)),
+              Text('Tam Studio', style: TextStyle(fontFamily: 'Pretendard', fontSize: 28, fontWeight: FontWeight.w600, color: Colors.white)),
               const SizedBox(height: 8),
               Text('Google 계정으로 로그인하세요', style: TextStyle(fontSize: 13, color: Colors.white.withAlpha(128))),
               const SizedBox(height: 32),
@@ -406,7 +405,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               children: [
                 Icon(Icons.settings, color: _primary, size: 24),
                 SizedBox(width: 8),
-                Text('설정', style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white)),
+                Text('설정', style: TextStyle(fontFamily: 'Pretendard', fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white)),
               ],
             ),
             const SizedBox(height: 20),
@@ -930,7 +929,7 @@ class EventCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(title,
-                        style: GoogleFonts.notoSansKr(
+                        style: TextStyle(fontFamily: 'Pretendard', 
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: _textPrimary,
@@ -938,7 +937,7 @@ class EventCard extends StatelessWidget {
                     if (subtitle.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(subtitle,
-                          style: GoogleFonts.notoSansKr(
+                          style: TextStyle(fontFamily: 'Pretendard', 
                             fontSize: 12,
                             color: _textSecondary,
                           )),
@@ -953,7 +952,7 @@ class EventCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(tag,
-                    style: GoogleFonts.notoSansKr(
+                    style: TextStyle(fontFamily: 'Pretendard', 
                       fontSize: 11,
                       color: barColor,
                       fontWeight: FontWeight.w600,
@@ -1381,7 +1380,7 @@ class _CalendarTabState extends State<_CalendarTab> {
                 child: Text(
                   _monthTitle(widget.focusedDay),
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.notoSansKr(
+                  style: TextStyle(fontFamily: 'Pretendard', 
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: _textPrimary,
@@ -1462,7 +1461,7 @@ class _CalendarTabState extends State<_CalendarTab> {
             children: [
               Text(
                 '${widget.selectedDay.month}월 ${widget.selectedDay.day}일',
-                style: GoogleFonts.notoSansKr(
+                style: TextStyle(fontFamily: 'Pretendard', 
                   fontSize: 13,
                   color: _textSecondary,
                   fontWeight: FontWeight.w600,
@@ -1477,7 +1476,7 @@ class _CalendarTabState extends State<_CalendarTab> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text('${dayEvents.length + nativeEvents.length}',
-                      style: GoogleFonts.notoSansKr(fontSize: 11, color: _primary, fontWeight: FontWeight.bold)),
+                      style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _primary, fontWeight: FontWeight.bold)),
                 ),
             ],
           ),
@@ -1492,7 +1491,7 @@ class _CalendarTabState extends State<_CalendarTab> {
                       Icon(Icons.event_note_outlined, color: _textSecondary, size: 36),
                       const SizedBox(height: 8),
                       Text('이 날 일정이 없어요',
-                          style: GoogleFonts.notoSansKr(color: _textSecondary, fontSize: 13)),
+                          style: TextStyle(fontFamily: 'Pretendard', color: _textSecondary, fontSize: 13)),
                       const SizedBox(height: 4),
                       TextButton.icon(
                         onPressed: widget.onAddEvent,
@@ -1573,7 +1572,7 @@ class _CalendarTabState extends State<_CalendarTab> {
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 8),
                               child: Text('기기 캘린더',
-                                  style: GoogleFonts.notoSansKr(fontSize: 11, color: _textSecondary)),
+                                  style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _textSecondary)),
                             ),
                             Expanded(child: Divider(color: _dividerColor, height: 1)),
                           ]),
@@ -1594,14 +1593,14 @@ class _CalendarTabState extends State<_CalendarTab> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(nev.title,
-                                    style: GoogleFonts.notoSansKr(
+                                    style: TextStyle(fontFamily: 'Pretendard', 
                                         fontSize: 13,
                                         color: _textSecondary,
                                         fontStyle: FontStyle.italic)),
                               ),
                               if (nev.start.hour != 0 || nev.start.minute != 0)
                                 Text(timeStr,
-                                    style: GoogleFonts.notoSansKr(fontSize: 11, color: _textSecondary)),
+                                    style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _textSecondary)),
                             ],
                           ),
                         );
@@ -1842,7 +1841,7 @@ class _GalaxyCalendarGrid extends StatelessWidget {
                                     : null,
                             child: Text(
                               '${day.day}',
-                              style: GoogleFonts.notoSansKr(
+                              style: TextStyle(fontFamily: 'Pretendard', 
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: isSel ? Colors.white : isToday ? _primary : textColor,
@@ -1939,7 +1938,7 @@ class _GalaxyCalendarGrid extends StatelessWidget {
               child: Text(
                 label,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.notoSansKr(
+                style: TextStyle(fontFamily: 'Pretendard', 
                   fontSize: 11,
                   color: label == '일'
                       ? _accent
@@ -2053,7 +2052,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
           child: Row(
             children: [
               Text('Bucket List',
-                  style: GoogleFonts.cormorantGaramond(
+                  style: TextStyle(fontFamily: 'Pretendard', 
                       fontSize: 28, fontWeight: FontWeight.w600, color: _textPrimary)),
               const Spacer(),
               IconButton(
@@ -2091,7 +2090,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
               ),
               const SizedBox(height: 4),
               Text('$doneCount / $total 완료',
-                  style: GoogleFonts.notoSansKr(fontSize: 11, color: _textSecondary)),
+                  style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _textSecondary)),
             ],
           ),
         ),
@@ -2107,7 +2106,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
                 padding: const EdgeInsets.only(right: 6),
                 child: ChoiceChip(
                   label: Text(f,
-                      style: GoogleFonts.notoSansKr(
+                      style: TextStyle(fontFamily: 'Pretendard', 
                           fontSize: 12,
                           color: sel ? Colors.white : _textSecondary)),
                   selected: sel,
@@ -2128,7 +2127,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
           child: filtered.isEmpty
               ? Center(
                   child: Text('버킷리스트가 비어있어요',
-                      style: GoogleFonts.notoSansKr(color: _textSecondary, fontSize: 13)))
+                      style: TextStyle(fontFamily: 'Pretendard', color: _textSecondary, fontSize: 13)))
               : ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   itemCount: filtered.length,
@@ -2217,7 +2216,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
                                     children: [
                                       Text(
                                         item.title,
-                                        style: GoogleFonts.notoSansKr(
+                                        style: TextStyle(fontFamily: 'Pretendard', 
                                           fontSize: 15,
                                           fontWeight: FontWeight.w700,
                                           color: item.done
@@ -2231,7 +2230,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
                                       if (item.category.isNotEmpty) ...[
                                         const SizedBox(height: 2),
                                         Text(item.category,
-                                            style: GoogleFonts.notoSansKr(
+                                            style: TextStyle(fontFamily: 'Pretendard', 
                                                 fontSize: 11,
                                                 color: _textSecondary)),
                                       ],
@@ -2246,7 +2245,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(item.priorityLabel,
-                                      style: GoogleFonts.notoSansKr(
+                                      style: TextStyle(fontFamily: 'Pretendard', 
                                           fontSize: 10,
                                           color: item.priorityColor,
                                           fontWeight: FontWeight.bold)),
@@ -2341,7 +2340,7 @@ class _EventDetailSheet extends StatelessWidget {
                   event.endDate != null
                       ? '${event.formattedDate}  ~  ${_formatDateStr(event.endDate!)}'
                       : event.formattedDate,
-                  style: GoogleFonts.notoSansKr(fontSize: 13, color: _textSecondary),
+                  style: TextStyle(fontFamily: 'Pretendard', fontSize: 13, color: _textSecondary),
                 ),
                 const Spacer(),
                 if (event.eventType == 'anniversary')
@@ -2352,13 +2351,13 @@ class _EventDetailSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text('기념일',
-                        style: GoogleFonts.notoSansKr(fontSize: 11, color: _accent, fontWeight: FontWeight.w600)),
+                        style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _accent, fontWeight: FontWeight.w600)),
                   ),
               ],
             ),
             const SizedBox(height: 6),
             Text(event.title,
-                style: GoogleFonts.notoSansKr(
+                style: TextStyle(fontFamily: 'Pretendard', 
                     fontSize: 26, fontWeight: FontWeight.w700, color: _textPrimary)),
             const SizedBox(height: 6),
             Container(
@@ -2368,7 +2367,7 @@ class _EventDetailSheet extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(event.category,
-                  style: GoogleFonts.notoSansKr(fontSize: 11, color: _primary, fontWeight: FontWeight.w600)),
+                  style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _primary, fontWeight: FontWeight.w600)),
             ),
             const SizedBox(height: 12),
             Divider(color: _dividerColor),
@@ -2392,7 +2391,7 @@ class _EventDetailSheet extends StatelessWidget {
                 children: event.tags
                     .map((t) => Chip(
                           label: Text(t,
-                              style: GoogleFonts.notoSansKr(
+                              style: TextStyle(fontFamily: 'Pretendard', 
                                   fontSize: 11, color: _textSecondary)),
                           backgroundColor: _bgElevated,
                           side: BorderSide.none,
@@ -2425,7 +2424,7 @@ class _EventDetailSheet extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12)),
                     ),
                     child: Text('수정하기',
-                        style: GoogleFonts.notoSansKr(color: _primary, fontWeight: FontWeight.bold)),
+                        style: TextStyle(fontFamily: 'Pretendard', color: _primary, fontWeight: FontWeight.bold)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -2436,7 +2435,7 @@ class _EventDetailSheet extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 13),
                     ),
                     child: Text('삭제하기',
-                        style: GoogleFonts.notoSansKr(
+                        style: TextStyle(fontFamily: 'Pretendard', 
                             color: const Color(0xFFEF4444), fontWeight: FontWeight.bold)),
                   ),
                 ),
@@ -2463,7 +2462,7 @@ class _DetailRow extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: Text(text,
-              style: GoogleFonts.notoSansKr(fontSize: 14, color: _textPrimary)),
+              style: TextStyle(fontFamily: 'Pretendard', fontSize: 14, color: _textPrimary)),
         ),
       ],
     );
@@ -2657,17 +2656,17 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
             ),
             const SizedBox(height: 16),
             Text(isEdit ? '이벤트 수정' : '새 이벤트',
-                style: GoogleFonts.notoSansKr(
+                style: TextStyle(fontFamily: 'Pretendard', 
                     fontSize: 22, fontWeight: FontWeight.w700, color: _textPrimary)),
             const SizedBox(height: 20),
             // Title
             _SheetField(
               child: TextField(
                 controller: _titleCtrl,
-                style: GoogleFonts.notoSansKr(fontSize: 15, color: _textPrimary),
+                style: TextStyle(fontFamily: 'Pretendard', fontSize: 15, color: _textPrimary),
                 decoration: InputDecoration(
                   hintText: '이벤트 제목',
-                  hintStyle: GoogleFonts.notoSansKr(color: _textSecondary),
+                  hintStyle: TextStyle(fontFamily: 'Pretendard', color: _textSecondary),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
@@ -2685,7 +2684,7 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
                       const Icon(Icons.calendar_today_outlined, size: 18, color: _textSecondary),
                       const SizedBox(width: 10),
                       Text(_formatDate(_date),
-                          style: GoogleFonts.notoSansKr(fontSize: 14, color: _textPrimary)),
+                          style: TextStyle(fontFamily: 'Pretendard', fontSize: 14, color: _textPrimary)),
                     ],
                   ),
                 ),
@@ -2705,7 +2704,7 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
                       const SizedBox(width: 10),
                       Text(
                         _endDate != null ? '~ ${_formatDate(_endDate!)}' : '종료일 (선택, 1박2일 등)',
-                        style: GoogleFonts.notoSansKr(
+                        style: TextStyle(fontFamily: 'Pretendard', 
                             fontSize: 14,
                             color: _endDate != null ? _textPrimary : _textSecondary),
                       ),
@@ -2733,7 +2732,7 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
                       const Icon(Icons.access_time, size: 18, color: _textSecondary),
                       const SizedBox(width: 10),
                       Text(_time.isEmpty ? '시간 (선택)' : _time,
-                          style: GoogleFonts.notoSansKr(
+                          style: TextStyle(fontFamily: 'Pretendard', 
                               fontSize: 14,
                               color: _time.isEmpty ? _textSecondary : _textPrimary)),
                       if (_time.isNotEmpty) ...[
@@ -2753,10 +2752,10 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
             _SheetField(
               child: TextField(
                 controller: _locationCtrl,
-                style: GoogleFonts.notoSansKr(fontSize: 14, color: _textPrimary),
+                style: TextStyle(fontFamily: 'Pretendard', fontSize: 14, color: _textPrimary),
                 decoration: InputDecoration(
                   hintText: '장소 (선택)',
-                  hintStyle: GoogleFonts.notoSansKr(color: _textSecondary),
+                  hintStyle: TextStyle(fontFamily: 'Pretendard', color: _textSecondary),
                   prefixIcon: const Icon(Icons.location_on_outlined, size: 18, color: _textSecondary),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -2768,11 +2767,11 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
             _SheetField(
               child: TextField(
                 controller: _memoCtrl,
-                style: GoogleFonts.notoSansKr(fontSize: 14, color: _textPrimary),
+                style: TextStyle(fontFamily: 'Pretendard', fontSize: 14, color: _textPrimary),
                 maxLines: 3,
                 decoration: InputDecoration(
                   hintText: '메모 (선택)',
-                  hintStyle: GoogleFonts.notoSansKr(color: _textSecondary),
+                  hintStyle: TextStyle(fontFamily: 'Pretendard', color: _textSecondary),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
@@ -2781,7 +2780,7 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
             const SizedBox(height: 16),
             // Category
             Text('카테고리',
-                style: GoogleFonts.notoSansKr(fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
+                style: TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
@@ -2797,7 +2796,7 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(c,
-                        style: GoogleFonts.notoSansKr(
+                        style: TextStyle(fontFamily: 'Pretendard', 
                             fontSize: 12,
                             color: sel ? Colors.white : _textSecondary,
                             fontWeight: sel ? FontWeight.bold : FontWeight.normal)),
@@ -2808,16 +2807,16 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
             const SizedBox(height: 16),
             // Event type
             Text('이벤트 유형',
-                style: GoogleFonts.notoSansKr(fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
+                style: TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             SegmentedButton<String>(
               segments: [
                 ButtonSegment(
                     value: 'normal',
-                    label: Text('일반', style: GoogleFonts.notoSansKr(fontSize: 12))),
+                    label: Text('일반', style: TextStyle(fontFamily: 'Pretendard', fontSize: 12))),
                 ButtonSegment(
                     value: 'anniversary',
-                    label: Text('기념일', style: GoogleFonts.notoSansKr(fontSize: 12))),
+                    label: Text('기념일', style: TextStyle(fontFamily: 'Pretendard', fontSize: 12))),
               ],
               selected: {_eventType},
               onSelectionChanged: (s) => setState(() => _eventType = s.first),
@@ -2831,7 +2830,7 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
             const SizedBox(height: 16),
             // Tags
             Text('태그',
-                style: GoogleFonts.notoSansKr(fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
+                style: TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -2839,10 +2838,10 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
                   child: _SheetField(
                     child: TextField(
                       controller: _tagCtrl,
-                      style: GoogleFonts.notoSansKr(fontSize: 13, color: _textPrimary),
+                      style: TextStyle(fontFamily: 'Pretendard', fontSize: 13, color: _textPrimary),
                       decoration: InputDecoration(
                         hintText: '태그 입력 후 Enter',
-                        hintStyle: GoogleFonts.notoSansKr(color: _textSecondary),
+                        hintStyle: TextStyle(fontFamily: 'Pretendard', color: _textSecondary),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       ),
@@ -2863,7 +2862,7 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
                 spacing: 6,
                 children: _tags
                     .map((t) => Chip(
-                          label: Text(t, style: GoogleFonts.notoSansKr(fontSize: 11, color: _textPrimary)),
+                          label: Text(t, style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _textPrimary)),
                           backgroundColor: _bgElevated,
                           side: BorderSide.none,
                           deleteIcon: const Icon(Icons.close, size: 14),
@@ -2891,7 +2890,7 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
                         width: 22, height: 22,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : Text('저장하기',
-                        style: GoogleFonts.notoSansKr(
+                        style: TextStyle(fontFamily: 'Pretendard', 
                             fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ),
@@ -2984,7 +2983,7 @@ class _BucketDetailSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(item.priorityLabel,
-                      style: GoogleFonts.notoSansKr(
+                      style: TextStyle(fontFamily: 'Pretendard', 
                           fontSize: 11, color: item.priorityColor, fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(width: 8),
@@ -2995,18 +2994,18 @@ class _BucketDetailSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(item.category,
-                      style: GoogleFonts.notoSansKr(fontSize: 11, color: _textSecondary)),
+                      style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _textSecondary)),
                 ),
               ],
             ),
             const SizedBox(height: 10),
             Text(item.title,
-                style: GoogleFonts.notoSansKr(
+                style: TextStyle(fontFamily: 'Pretendard', 
                     fontSize: 24, fontWeight: FontWeight.w700, color: _textPrimary)),
             if (item.done && item.doneAt.isNotEmpty) ...[
               const SizedBox(height: 6),
               Text('완료: ${item.doneAt}',
-                  style: GoogleFonts.notoSansKr(fontSize: 12, color: _success)),
+                  style: TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _success)),
             ],
             const SizedBox(height: 12),
             Divider(color: _dividerColor),
@@ -3022,7 +3021,7 @@ class _BucketDetailSheet extends StatelessWidget {
                 children: item.tags
                     .map((t) => Chip(
                           label: Text(t,
-                              style: GoogleFonts.notoSansKr(
+                              style: TextStyle(fontFamily: 'Pretendard', 
                                   fontSize: 11, color: _textSecondary)),
                           backgroundColor: _bgElevated,
                           side: BorderSide.none,
@@ -3055,7 +3054,7 @@ class _BucketDetailSheet extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12)),
                     ),
                     child: Text('수정하기',
-                        style: GoogleFonts.notoSansKr(color: _primary, fontWeight: FontWeight.bold)),
+                        style: TextStyle(fontFamily: 'Pretendard', color: _primary, fontWeight: FontWeight.bold)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -3065,7 +3064,7 @@ class _BucketDetailSheet extends StatelessWidget {
                     style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 13)),
                     child: Text('삭제하기',
-                        style: GoogleFonts.notoSansKr(
+                        style: TextStyle(fontFamily: 'Pretendard', 
                             color: const Color(0xFFEF4444), fontWeight: FontWeight.bold)),
                   ),
                 ),
@@ -3186,17 +3185,17 @@ class _AddEditBucketSheetState extends State<_AddEditBucketSheet> {
             ),
             const SizedBox(height: 16),
             Text(isEdit ? '버킷 수정' : '버킷 추가',
-                style: GoogleFonts.notoSansKr(
+                style: TextStyle(fontFamily: 'Pretendard', 
                     fontSize: 22, fontWeight: FontWeight.w700, color: _textPrimary)),
             const SizedBox(height: 20),
             // Title
             _SheetField(
               child: TextField(
                 controller: _titleCtrl,
-                style: GoogleFonts.notoSansKr(fontSize: 15, color: _textPrimary),
+                style: TextStyle(fontFamily: 'Pretendard', fontSize: 15, color: _textPrimary),
                 decoration: InputDecoration(
                   hintText: '버킷 제목',
-                  hintStyle: GoogleFonts.notoSansKr(color: _textSecondary),
+                  hintStyle: TextStyle(fontFamily: 'Pretendard', color: _textSecondary),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
@@ -3207,11 +3206,11 @@ class _AddEditBucketSheetState extends State<_AddEditBucketSheet> {
             _SheetField(
               child: TextField(
                 controller: _memoCtrl,
-                style: GoogleFonts.notoSansKr(fontSize: 14, color: _textPrimary),
+                style: TextStyle(fontFamily: 'Pretendard', fontSize: 14, color: _textPrimary),
                 maxLines: 3,
                 decoration: InputDecoration(
                   hintText: '메모 (선택)',
-                  hintStyle: GoogleFonts.notoSansKr(color: _textSecondary),
+                  hintStyle: TextStyle(fontFamily: 'Pretendard', color: _textSecondary),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
@@ -3220,7 +3219,7 @@ class _AddEditBucketSheetState extends State<_AddEditBucketSheet> {
             const SizedBox(height: 16),
             // Category
             Text('카테고리',
-                style: GoogleFonts.notoSansKr(fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
+                style: TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
@@ -3236,7 +3235,7 @@ class _AddEditBucketSheetState extends State<_AddEditBucketSheet> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(c,
-                        style: GoogleFonts.notoSansKr(
+                        style: TextStyle(fontFamily: 'Pretendard', 
                             fontSize: 12,
                             color: sel ? Colors.white : _textSecondary,
                             fontWeight: sel ? FontWeight.bold : FontWeight.normal)),
@@ -3247,13 +3246,13 @@ class _AddEditBucketSheetState extends State<_AddEditBucketSheet> {
             const SizedBox(height: 16),
             // Priority
             Text('우선순위',
-                style: GoogleFonts.notoSansKr(fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
+                style: TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             SegmentedButton<int>(
               segments: [
-                ButtonSegment(value: 1, label: Text('HIGH', style: GoogleFonts.notoSansKr(fontSize: 12))),
-                ButtonSegment(value: 2, label: Text('MED', style: GoogleFonts.notoSansKr(fontSize: 12))),
-                ButtonSegment(value: 3, label: Text('LOW', style: GoogleFonts.notoSansKr(fontSize: 12))),
+                ButtonSegment(value: 1, label: Text('HIGH', style: TextStyle(fontFamily: 'Pretendard', fontSize: 12))),
+                ButtonSegment(value: 2, label: Text('MED', style: TextStyle(fontFamily: 'Pretendard', fontSize: 12))),
+                ButtonSegment(value: 3, label: Text('LOW', style: TextStyle(fontFamily: 'Pretendard', fontSize: 12))),
               ],
               selected: {_priority},
               onSelectionChanged: (s) => setState(() => _priority = s.first),
@@ -3267,15 +3266,15 @@ class _AddEditBucketSheetState extends State<_AddEditBucketSheet> {
             const SizedBox(height: 16),
             // Tags
             Text('태그',
-                style: GoogleFonts.notoSansKr(fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
+                style: TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             _SheetField(
               child: TextField(
                 controller: _tagCtrl,
-                style: GoogleFonts.notoSansKr(fontSize: 13, color: _textPrimary),
+                style: TextStyle(fontFamily: 'Pretendard', fontSize: 13, color: _textPrimary),
                 decoration: InputDecoration(
                   hintText: '태그 입력 후 Enter',
-                  hintStyle: GoogleFonts.notoSansKr(color: _textSecondary),
+                  hintStyle: TextStyle(fontFamily: 'Pretendard', color: _textSecondary),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 ),
@@ -3293,7 +3292,7 @@ class _AddEditBucketSheetState extends State<_AddEditBucketSheet> {
                 spacing: 6,
                 children: _tags
                     .map((t) => Chip(
-                          label: Text(t, style: GoogleFonts.notoSansKr(fontSize: 11, color: _textPrimary)),
+                          label: Text(t, style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _textPrimary)),
                           backgroundColor: _bgElevated,
                           side: BorderSide.none,
                           deleteIcon: const Icon(Icons.close, size: 14),
@@ -3320,7 +3319,7 @@ class _AddEditBucketSheetState extends State<_AddEditBucketSheet> {
                         width: 22, height: 22,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : Text('저장하기',
-                        style: GoogleFonts.notoSansKr(
+                        style: TextStyle(fontFamily: 'Pretendard', 
                             fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ),

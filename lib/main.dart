@@ -16,7 +16,7 @@ import 'package:home_widget/home_widget.dart';
 import 'package:device_calendar/device_calendar.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 
-const String appVersion = '0.5.0';
+const String appVersion = '0.5.1';
 
 // ── Apple Dark + Warm Romantic ────────────────────────
 const _scaffold      = Color(0xFF000000); // surface-black
@@ -120,25 +120,6 @@ class _KeyGatePageState extends State<KeyGatePage> {
   void initState() {
     super.initState();
     _checkExistingAuth();
-    _checkForUpdate();
-  }
-
-  Future<void> _checkForUpdate() async {
-    try {
-      final snapshot = await FirebaseDatabase.instance.ref('app_version').get();
-      if (!snapshot.exists) return;
-      final data = Map<String, dynamic>.from(snapshot.value as Map);
-      final latest = data['latest'] as String? ?? '';
-      final apkUrl = data['apk_url'] as String? ?? '';
-      if (latest.isEmpty || apkUrl.isEmpty) return;
-      if (latest != appVersion && mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => _UpdateDialog(newVersion: latest, apkUrl: apkUrl),
-        );
-      }
-    } catch (_) {}
   }
 
   Future<void> _checkExistingAuth() async {
@@ -388,14 +369,14 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _bgCard,
-        title: const Text('연동 해제', style: TextStyle(color: Colors.white)),
-        content: const Text('Google 계정 연동을 해제하면 다시 로그인해야 합니다.', style: TextStyle(color: Colors.white70)),
+        title: const Text('연동 해제', style: TextStyle(color: _textPrimary)),
+        content: const Text('Google 계정 연동을 해제하면 다시 로그인해야 합니다.', style: TextStyle(color: _textSecondary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: _danger),
-            child: const Text('해제', style: TextStyle(color: Colors.white)),
+            child: const Text('해제', style: TextStyle(color: _textPrimary)),
           ),
         ],
       ),
@@ -430,7 +411,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               children: [
                 Icon(Icons.settings, color: _primary, size: 24),
                 SizedBox(width: 8),
-                Text('설정', style: TextStyle(fontFamily: 'Pretendard', fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white)),
+                Text('설정', style: const TextStyle(fontFamily: 'Pretendard', fontSize: 22, fontWeight: FontWeight.w600, color: _textPrimary)),
               ],
             ),
             const SizedBox(height: 20),
@@ -441,18 +422,24 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: _bgCard,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(_rLg),
                 border: Border.all(color: _dividerColor),
               ),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: _dividerColor,
-                    backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-                    child: photoUrl == null
-                        ? const Icon(Icons.person, color: Colors.white54, size: 28)
-                        : null,
+                  Container(
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.fromBorderSide(BorderSide(color: _accent, width: 2)),
+                    ),
+                    child: CircleAvatar(
+                      radius: 24,
+                      backgroundColor: _dividerColor,
+                      backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                      child: photoUrl == null
+                          ? const Icon(Icons.person, color: _textMuted, size: 28)
+                          : null,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -460,17 +447,17 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (displayName.isNotEmpty)
-                          Text(displayName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                          Text(displayName, style: const TextStyle(fontFamily: 'Pretendard', fontSize: 16, fontWeight: FontWeight.bold, color: _textPrimary)),
                         if (email.isNotEmpty) ...[
                           const SizedBox(height: 2),
-                          Text(email, style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(153))),
+                          Text(email, style: const TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textSecondary)),
                         ],
                         const SizedBox(height: 6),
                         Row(
                           children: [
                             Container(width: 8, height: 8, decoration: const BoxDecoration(color: _success, shape: BoxShape.circle)),
                             const SizedBox(width: 6),
-                            Text('연동 중', style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(179))),
+                            Text('연동 중', style: const TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textSecondary)),
                           ],
                         ),
                       ],
@@ -502,7 +489,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: _bgCard,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(_rLg),
                 border: Border.all(color: _dividerColor),
               ),
               child: Row(
@@ -514,7 +501,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text('기기 캘린더 동기화',
-                            style: TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w600)),
+                            style: TextStyle(fontFamily: 'Pretendard', fontSize: 14, color: _textPrimary, fontWeight: FontWeight.w600)),
                         const SizedBox(height: 2),
                         Text(
                           _calPermission ? '캘린더 일정을 표시합니다' : '권한이 없습니다',
@@ -545,9 +532,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
             Center(
               child: Column(
                 children: [
-                  Text('Tam Studio Mobile', style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(128))),
+                  Text('Tam Studio Mobile', style: const TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textMuted)),
                   const SizedBox(height: 4),
-                  Text('v$appVersion', style: TextStyle(fontSize: 11, color: Colors.white.withAlpha(77))),
+                  Text('v$appVersion', style: const TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _textMuted)),
                 ],
               ),
             ),
@@ -623,17 +610,17 @@ class _UpdateDialogState extends State<_UpdateDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: _bgCard,
-      title: const Text('업데이트 알림', style: TextStyle(color: Colors.white)),
+      title: const Text('업데이트 알림', style: TextStyle(color: _textPrimary)),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text('새 버전 ${widget.newVersion}\n현재 버전: $appVersion',
-              style: TextStyle(color: Colors.white.withAlpha(200))),
+              style: const TextStyle(color: _textSecondary)),
           if (_downloading) ...[
             const SizedBox(height: 16),
             LinearProgressIndicator(value: _progress, color: _primary),
             const SizedBox(height: 8),
-            Text(_status, style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(128))),
+            Text(_status, style: const TextStyle(fontSize: 12, color: _textMuted)),
           ],
         ],
       ),
@@ -641,13 +628,13 @@ class _UpdateDialogState extends State<_UpdateDialog> {
         if (!_downloading)
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('나중에', style: TextStyle(color: Colors.white.withAlpha(128))),
+            child: const Text('나중에', style: TextStyle(color: _textMuted)),
           ),
         if (!_downloading)
           ElevatedButton(
             onPressed: _downloadAndInstall,
             style: ElevatedButton.styleFrom(backgroundColor: _primary),
-            child: const Text('업데이트', style: TextStyle(color: Colors.white)),
+            child: const Text('업데이트', style: TextStyle(color: _textPrimary)),
           ),
       ],
     );
@@ -788,9 +775,7 @@ class DateEvent {
       final parts = date.split('-');
       if (parts.length != 3) return date;
       final dt = DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
-      const months = ['January','February','March','April','May','June',
-                      'July','August','September','October','November','December'];
-      return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+      return '${dt.year}년 ${dt.month}월 ${dt.day}일';
     } catch (_) {
       return date;
     }
@@ -942,7 +927,7 @@ class EventCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
           color: _bgCard,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(_rLg),
           border: Border(left: BorderSide(color: barColor, width: 4)),
         ),
         child: Padding(
@@ -1513,9 +1498,9 @@ class _CalendarTabState extends State<_CalendarTab> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.event_note_outlined, color: _textSecondary, size: 36),
+                      const Icon(Icons.event_note_outlined, color: _accent, size: 36),
                       const SizedBox(height: 8),
-                      Text('이 날 일정이 없어요',
+                      const Text('아직 일정이 없어요 💕',
                           style: TextStyle(fontFamily: 'Pretendard', color: _textSecondary, fontSize: 13)),
                       const SizedBox(height: 4),
                       TextButton.icon(
@@ -1543,7 +1528,7 @@ class _CalendarTabState extends State<_CalendarTab> {
                           padding: const EdgeInsets.only(right: 20),
                           decoration: BoxDecoration(
                             color: _danger.withAlpha(200),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(_rLg),
                           ),
                           child: const Icon(Icons.delete_outline, color: Colors.white),
                         ),
@@ -1858,7 +1843,7 @@ class _GalaxyCalendarGrid extends StatelessWidget {
                             width: 22, height: 22,
                             alignment: Alignment.center,
                             decoration: isSel
-                                ? const BoxDecoration(color: _primary, shape: BoxShape.circle)
+                                ? const BoxDecoration(color: _accent, shape: BoxShape.circle)
                                 : isToday
                                     ? BoxDecoration(
                                         border: Border.all(color: _primary, width: 1.5),
@@ -1866,10 +1851,10 @@ class _GalaxyCalendarGrid extends StatelessWidget {
                                     : null,
                             child: Text(
                               '${day.day}',
-                              style: TextStyle(fontFamily: 'Pretendard', 
+                              style: TextStyle(fontFamily: 'Pretendard',
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                color: isSel ? Colors.white : isToday ? _primary : textColor,
+                                color: isSel ? const Color(0xFF1A1A1A) : isToday ? _primary : textColor,
                               ),
                             ),
                           ),
@@ -2027,7 +2012,11 @@ class _BucketlistPageState extends State<BucketlistPage> {
       final parsed = rawMap.entries
           .map((e) => BucketItem.fromMap(e.key, Map<String, dynamic>.from(e.value as Map)))
           .toList();
-      parsed.sort((a, b) => a.priority.compareTo(b.priority));
+      parsed.sort((a, b) {
+        // done items sink to bottom; within same done state, sort by priority
+        if (a.done != b.done) return a.done ? 1 : -1;
+        return a.priority.compareTo(b.priority);
+      });
       if (mounted) setState(() => _items = parsed);
     });
   }
@@ -2108,7 +2097,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
                   builder: (_, v, __) => LinearProgressIndicator(
                     value: v,
                     backgroundColor: _dividerColor,
-                    valueColor: const AlwaysStoppedAnimation(_success),
+                    valueColor: const AlwaysStoppedAnimation(_accent),
                     minHeight: 6,
                   ),
                 ),
@@ -2131,12 +2120,12 @@ class _BucketlistPageState extends State<BucketlistPage> {
                 padding: const EdgeInsets.only(right: 6),
                 child: ChoiceChip(
                   label: Text(f,
-                      style: TextStyle(fontFamily: 'Pretendard', 
+                      style: TextStyle(fontFamily: 'Pretendard',
                           fontSize: 12,
-                          color: sel ? Colors.white : _textSecondary)),
+                          color: sel ? const Color(0xFF1A1A1A) : _textSecondary)),
                   selected: sel,
                   onSelected: (_) => setState(() => _filter = f),
-                  selectedColor: _primary,
+                  selectedColor: _accent,
                   backgroundColor: _bgCard,
                   side: BorderSide.none,
                   padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -2151,7 +2140,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
         Expanded(
           child: filtered.isEmpty
               ? Center(
-                  child: Text('버킷리스트가 비어있어요',
+                  child: const Text('함께할 일들을 채워봐요 ✨',
                       style: TextStyle(fontFamily: 'Pretendard', color: _textSecondary, fontSize: 13)))
               : ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -2166,7 +2155,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
                         padding: const EdgeInsets.only(right: 20),
                         decoration: BoxDecoration(
                           color: _danger.withAlpha(180),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(_rLg),
                         ),
                         child: const Icon(Icons.delete_outline, color: Colors.white),
                       ),
@@ -2204,7 +2193,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
                           margin: const EdgeInsets.only(bottom: 10),
                           decoration: BoxDecoration(
                             color: _bgCard,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(_rLg),
                             border: Border(
                                 left: BorderSide(color: item.barColor, width: 4)),
                           ),
@@ -2221,16 +2210,16 @@ class _BucketlistPageState extends State<BucketlistPage> {
                                     width: 22,
                                     height: 22,
                                     decoration: BoxDecoration(
-                                      color: item.done ? _success : Colors.transparent,
+                                      color: item.done ? _accent : Colors.transparent,
                                       border: Border.all(
                                           color:
-                                              item.done ? _success : _textSecondary,
+                                              item.done ? _accent : _textSecondary,
                                           width: 1.5),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: item.done
                                         ? const Icon(Icons.check,
-                                            size: 14, color: Colors.white)
+                                            size: 14, color: Color(0xFF1A1A1A))
                                         : null,
                                   ),
                                 ),
@@ -2316,15 +2305,15 @@ class _EventDetailSheet extends StatelessWidget {
       context: ctx,
       builder: (c) => AlertDialog(
         backgroundColor: _bgCard,
-        title: const Text('삭제', style: TextStyle(color: Colors.white)),
+        title: const Text('삭제', style: TextStyle(color: _textPrimary)),
         content: Text('"${event.title}" 을(를) 삭제할까요?',
-            style: const TextStyle(color: Colors.white70)),
+            style: const TextStyle(color: _textSecondary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('취소')),
           ElevatedButton(
             onPressed: () => Navigator.pop(c, true),
             style: ElevatedButton.styleFrom(backgroundColor: _danger),
-            child: const Text('삭제', style: TextStyle(color: Colors.white)),
+            child: const Text('삭제', style: TextStyle(color: _textPrimary)),
           ),
         ],
       ),
@@ -2446,7 +2435,7 @@ class _EventDetailSheet extends StatelessWidget {
                       side: BorderSide(color: _primary),
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(_rLg)),
                     ),
                     child: Text('수정하기',
                         style: TextStyle(fontFamily: 'Pretendard', color: _primary, fontWeight: FontWeight.bold)),
@@ -2846,8 +2835,8 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
               selected: {_eventType},
               onSelectionChanged: (s) => setState(() => _eventType = s.first),
               style: SegmentedButton.styleFrom(
-                selectedBackgroundColor: _primary,
-                selectedForegroundColor: Colors.white,
+                selectedBackgroundColor: _accent,
+                selectedForegroundColor: const Color(0xFF1A1A1A),
                 backgroundColor: _bgElevated,
                 foregroundColor: _textSecondary,
               ),
@@ -2935,7 +2924,7 @@ class _SheetField extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: _bgElevated,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(_rLg),
       ),
       child: child,
     );
@@ -2956,15 +2945,15 @@ class _BucketDetailSheet extends StatelessWidget {
       context: ctx,
       builder: (c) => AlertDialog(
         backgroundColor: _bgCard,
-        title: const Text('삭제', style: TextStyle(color: Colors.white)),
+        title: const Text('삭제', style: TextStyle(color: _textPrimary)),
         content: Text('"${item.title}" 을(를) 삭제할까요?',
-            style: const TextStyle(color: Colors.white70)),
+            style: const TextStyle(color: _textSecondary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('취소')),
           ElevatedButton(
             onPressed: () => Navigator.pop(c, true),
             style: ElevatedButton.styleFrom(backgroundColor: _danger),
-            child: const Text('삭제', style: TextStyle(color: Colors.white)),
+            child: const Text('삭제', style: TextStyle(color: _textPrimary)),
           ),
         ],
       ),
@@ -3076,7 +3065,7 @@ class _BucketDetailSheet extends StatelessWidget {
                       side: BorderSide(color: _primary),
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(_rLg)),
                     ),
                     child: Text('수정하기',
                         style: TextStyle(fontFamily: 'Pretendard', color: _primary, fontWeight: FontWeight.bold)),

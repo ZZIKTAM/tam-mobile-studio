@@ -16,27 +16,31 @@ import 'package:home_widget/home_widget.dart';
 import 'package:device_calendar/device_calendar.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 
-const String appVersion = '0.5.1';
+const String appVersion = '0.6.0';
 
-// ── Apple Dark + Warm Romantic ────────────────────────
-const _scaffold      = Color(0xFF000000); // surface-black
-const _bgCard        = Color(0xFF272729); // surface-tile-1
-const _bgElevated    = Color(0xFF2A2A2C); // surface-tile-2 (modal/sheet)
-const _bgSunken      = Color(0xFF252527); // surface-tile-3 (input bg)
-const _primary       = Color(0xFF2997FF); // Apple primary-on-dark
-const _accent        = Color(0xFFE8A598); // Rose Gold — couple accent
+// ── Apple HIG Dark Mode ────────────────────────────────
+// Surface hierarchy: systemBackground → secondarySystemBackground → tertiarySystemBackground
+const _scaffold      = Color(0xFF000000); // systemBackground
+const _bgCard        = Color(0xFF1C1C1E); // secondarySystemBackground
+const _bgElevated    = Color(0xFF2C2C2E); // tertiarySystemBackground (modal/sheet)
+const _bgSunken      = Color(0xFF1C1C1E); // systemFill (input bg)
+// Color roles: _primary = ALL interactive actions, _accent = couple brand data only
+const _primary       = Color(0xFF0A84FF); // systemBlue (dark) — buttons, FAB, links, tabs
+const _accent        = Color(0xFFE8A598); // Rose Gold — event bars, selected day, progress (data only)
 const _accentSoft    = Color(0xFFFFB3C1); // Soft Pink — event dots
-const _success       = Color(0xFF30D158); // Apple Green
-const _danger        = Color(0xFFFF453A); // Apple Red
-const _textPrimary   = Color(0xFFFFFFFF); // body-on-dark
-const _textSecondary = Color(0xFFCCCCCC); // body-muted
-const _textMuted     = Color(0xFF7A7A7A); // placeholder / inactive
-const _dividerColor  = Color(0xFF38383A); // Apple separator (dark)
-// Border radius — Apple token
-const double _rSm   = 8.0;
-const double _rMd   = 11.0;
-const double _rLg   = 18.0;
-const double _rPill = 9999.0; // pill — FAB, chips
+const _success       = Color(0xFF30D158); // systemGreen
+const _danger        = Color(0xFFFF453A); // systemRed
+// Label hierarchy: label → secondaryLabel → tertiaryLabel
+const _textPrimary   = Color(0xFFFFFFFF); // label
+const _textSecondary = Color(0xFF8E8E93); // secondaryLabel
+const _textMuted     = Color(0xFF48484A); // tertiaryLabel
+const _dividerColor  = Color(0xFF3A3A3C); // separator
+// Border radius — Apple HIG
+const double _rSm   = 8.0;   // small controls
+const double _rMd   = 12.0;  // cards, cells
+const double _rLg   = 16.0;  // large cards, sheets
+const double _rBtn  = 14.0;  // standard buttons (Apple CTA style)
+const double _rPill = 9999.0; // chips, tags only
 // ─────────────────────────────────────────────────────
 
 // FCM background handler (must be top-level)
@@ -80,12 +84,17 @@ class TamStudioApp extends StatelessWidget {
         ),
         navigationBarTheme: NavigationBarThemeData(
           backgroundColor: _bgCard,
-          indicatorColor: _primary.withValues(alpha: 0.15),
-          labelTextStyle: WidgetStatePropertyAll(TextStyle(
-            fontFamily: 'Pretendard',
-            fontSize: 11,
-            fontWeight: FontWeight.w400,
-          )),
+          indicatorColor: _primary.withValues(alpha: 0.20),
+          iconTheme: WidgetStatePropertyAll(IconThemeData(size: 24, color: _textSecondary)),
+          labelTextStyle: WidgetStateProperty.resolveWith((states) {
+            final selected = states.contains(WidgetState.selected);
+            return TextStyle(
+              fontFamily: 'Pretendard',
+              fontSize: 11,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              color: selected ? _primary : _textSecondary,
+            );
+          }),
         ),
         dividerColor: _dividerColor,
         useMaterial3: true,
@@ -194,17 +203,19 @@ class _KeyGatePageState extends State<KeyGatePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 70, height: 70,
+                width: 72, height: 72,
                 decoration: BoxDecoration(
-                  color: _accent,
+                  color: _bgCard,
                   borderRadius: BorderRadius.circular(_rLg),
                 ),
-                child: const Center(child: Text('🎮', style: TextStyle(fontSize: 36))),
+                child: const Center(
+                  child: Icon(Icons.favorite_rounded, color: _accent, size: 36),
+                ),
               ),
               const SizedBox(height: 20),
-              Text('Tam Studio', style: TextStyle(fontFamily: 'Pretendard', fontSize: 28, fontWeight: FontWeight.w600, color: _textPrimary)),
+              Text('Tam Studio', style: TextStyle(fontFamily: 'Pretendard', fontSize: 28, fontWeight: FontWeight.w700, color: _textPrimary)),
               const SizedBox(height: 8),
-              Text('Google 계정으로 로그인하세요', style: TextStyle(fontFamily: 'Pretendard', fontSize: 13, color: _textSecondary)),
+              Text('함께하는 우리만의 공간', style: TextStyle(fontFamily: 'Pretendard', fontSize: 14, color: _textSecondary)),
               const SizedBox(height: 32),
               if (_error.isNotEmpty) ...[
                 Text(_error, style: const TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _danger)),
@@ -223,7 +234,8 @@ class _KeyGatePageState extends State<KeyGatePage> {
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rPill)),
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rBtn)),
                   ),
                 ),
               ),
@@ -301,10 +313,18 @@ class _HomePageState extends State<HomePage> {
         selectedIndex: _currentTab,
         onDestinationSelected: (i) => setState(() => _currentTab = i),
         backgroundColor: _bgCard,
-        indicatorColor: _primary.withValues(alpha: 0.15),
+        indicatorColor: _primary.withValues(alpha: 0.20),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.calendar_month), label: '데이트'),
-          NavigationDestination(icon: Icon(Icons.settings), label: '설정'),
+          NavigationDestination(
+            icon: Icon(Icons.favorite_border, color: _textSecondary),
+            selectedIcon: Icon(Icons.favorite, color: _primary),
+            label: '데이트',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline, color: _textSecondary),
+            selectedIcon: Icon(Icons.person, color: _primary),
+            label: '설정',
+          ),
         ],
       ),
     );
@@ -403,64 +423,87 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
-              children: [
-                Icon(Icons.settings, color: _primary, size: 24),
-                SizedBox(width: 8),
-                Text('설정', style: const TextStyle(fontFamily: 'Pretendard', fontSize: 22, fontWeight: FontWeight.w600, color: _textPrimary)),
-              ],
-            ),
-            const SizedBox(height: 20),
+            // Title — Apple large title style
+            const Text('설정',
+                style: TextStyle(fontFamily: 'Pretendard', fontSize: 28, fontWeight: FontWeight.bold, color: _textPrimary)),
+            const SizedBox(height: 24),
 
-            // Google account info
+            // Account card — profile + sign-out grouped (Apple HIG: related actions in same section)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: _bgCard,
                 borderRadius: BorderRadius.circular(_rLg),
-                border: Border.all(color: _dividerColor),
               ),
-              child: Row(
+              child: Column(
                 children: [
-                  Container(
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.fromBorderSide(BorderSide(color: _accent, width: 2)),
-                    ),
-                    child: CircleAvatar(
-                      radius: 24,
-                      backgroundColor: _dividerColor,
-                      backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-                      child: photoUrl == null
-                          ? const Icon(Icons.person, color: _textMuted, size: 28)
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  // Profile row
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
                       children: [
-                        if (displayName.isNotEmpty)
-                          Text(displayName, style: const TextStyle(fontFamily: 'Pretendard', fontSize: 16, fontWeight: FontWeight.bold, color: _textPrimary)),
-                        if (email.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(email, style: const TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textSecondary)),
-                        ],
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Container(width: 8, height: 8, decoration: const BoxDecoration(color: _success, shape: BoxShape.circle)),
-                            const SizedBox(width: 6),
-                            Text('연동 중', style: const TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textSecondary)),
-                          ],
+                        Container(
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.fromBorderSide(BorderSide(color: _accent, width: 2)),
+                          ),
+                          child: CircleAvatar(
+                            radius: 24,
+                            backgroundColor: _dividerColor,
+                            backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                            child: photoUrl == null
+                                ? const Icon(Icons.person, color: _textSecondary, size: 28)
+                                : null,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (displayName.isNotEmpty)
+                                Text(displayName,
+                                    style: const TextStyle(fontFamily: 'Pretendard', fontSize: 16, fontWeight: FontWeight.bold, color: _textPrimary)),
+                              if (email.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(email,
+                                    style: const TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textSecondary)),
+                              ],
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Container(width: 8, height: 8, decoration: const BoxDecoration(color: _success, shape: BoxShape.circle)),
+                                  const SizedBox(width: 6),
+                                  const Text('Google 연동 중',
+                                      style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _textSecondary)),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ],
+                    ),
+                  ),
+                  // Separator
+                  const Divider(height: 1, thickness: 1, color: _dividerColor),
+                  // Sign-out — red text, full-width, inside card (Apple: destructive in same group)
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: () => _signOut(context),
+                      style: TextButton.styleFrom(
+                        foregroundColor: _danger,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(bottom: Radius.circular(_rLg)),
+                        ),
+                      ),
+                      child: const Text('연동 해제',
+                          style: TextStyle(fontFamily: 'Pretendard', fontSize: 15, fontWeight: FontWeight.w500)),
                     ),
                   ),
                 ],
@@ -468,29 +511,13 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
             ),
             const SizedBox(height: 12),
 
-            // Sign out button
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () => _signOut(context),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: _dividerColor),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                child: const Text('연동 해제 (로그아웃)', style: TextStyle(fontFamily: 'Pretendard', fontSize: 13, color: _danger)),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Calendar sync section
+            // Calendar sync card
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
                 color: _bgCard,
                 borderRadius: BorderRadius.circular(_rLg),
-                border: Border.all(color: _dividerColor),
               ),
               child: Row(
                 children: [
@@ -505,7 +532,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                         const SizedBox(height: 2),
                         Text(
                           _calPermission ? '캘린더 일정을 표시합니다' : '권한이 없습니다',
-                          style: TextStyle(fontSize: 11, color: _calPermission ? _success : _textSecondary),
+                          style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _calPermission ? _success : _textSecondary),
                         ),
                       ],
                     ),
@@ -520,7 +547,8 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                         visualDensity: VisualDensity.compact,
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                       ),
-                      child: const Text('권한 허용', style: TextStyle(fontSize: 12)),
+                      child: const Text('권한 허용',
+                          style: TextStyle(fontFamily: 'Pretendard', fontSize: 12)),
                     ),
                 ],
               ),
@@ -528,13 +556,15 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
 
             const Spacer(),
 
-            // App info
+            // App info footer
             Center(
               child: Column(
                 children: [
-                  Text('Tam Studio Mobile', style: const TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textMuted)),
-                  const SizedBox(height: 4),
-                  Text('v$appVersion', style: const TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _textMuted)),
+                  const Text('Tam Studio',
+                      style: TextStyle(fontFamily: 'Pretendard', fontSize: 12, fontWeight: FontWeight.w600, color: _textMuted)),
+                  const SizedBox(height: 2),
+                  Text('v$appVersion',
+                      style: const TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _textMuted)),
                 ],
               ),
             ),
@@ -1594,8 +1624,7 @@ class _CalendarTabState extends State<_CalendarTab> {
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
                             color: _bgCard,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: _dividerColor),
+                            borderRadius: BorderRadius.circular(_rMd),
                           ),
                           child: Row(
                             children: [
@@ -2058,30 +2087,16 @@ class _BucketlistPageState extends State<BucketlistPage> {
     final doneCount = _items.where((i) => i.done).length;
     final progress = total == 0 ? 0.0 : doneCount / total;
 
-    return Column(
+    return Stack(
+      children: [
+        Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: Row(
-            children: [
-              Text('Bucket List',
-                  style: TextStyle(fontFamily: 'Pretendard', 
-                      fontSize: 28, fontWeight: FontWeight.w600, color: _textPrimary)),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.add, color: _primary),
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => _AddEditBucketSheet(userKey: widget.userKey),
-                  );
-                },
-              ),
-            ],
-          ),
+          child: Text('버킷리스트',
+              style: TextStyle(fontFamily: 'Pretendard',
+                  fontSize: 28, fontWeight: FontWeight.w600, color: _textPrimary)),
         ),
         // Progress bar
         Padding(
@@ -2143,7 +2158,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
                   child: const Text('함께할 일들을 채워봐요 ✨',
                       style: TextStyle(fontFamily: 'Pretendard', color: _textSecondary, fontSize: 13)))
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 80),
                   itemCount: filtered.length,
                   itemBuilder: (ctx, i) {
                     final item = filtered[i];
@@ -2272,6 +2287,25 @@ class _BucketlistPageState extends State<BucketlistPage> {
                     );
                   },
                 ),
+        ),
+      ],
+        ),
+        Positioned(
+          bottom: 16,
+          right: 20,
+          child: FloatingActionButton(
+            heroTag: 'bucketFab',
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => _AddEditBucketSheet(userKey: widget.userKey),
+              );
+            },
+            backgroundColor: _primary,
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
         ),
       ],
     );

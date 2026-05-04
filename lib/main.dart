@@ -17,17 +17,22 @@ import 'package:home_widget/home_widget.dart';
 import 'package:device_calendar/device_calendar.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 
-const String appVersion = '0.4.1';
+const String appVersion = '0.4.2';
 
-// ── Date Feature Color Constants ──────────────────────
-const _bgCard        = Color(0xFF362720);
-const _bgElevated    = Color(0xFF422D25);
-const _accent        = Color(0xFFF28C6B); // warm orange-salmon
+// ── Claude Design System — Dark Surfaces ──────────────
+const _bgCard        = Color(0xFF1F1E1B); // surface-dark-soft
+const _bgElevated    = Color(0xFF252320); // surface-dark-elevated
+const _accent        = Color(0xFFCC785C); // coral primary
 const _success       = Color(0xFF6EE7B7); // mint
-const _textPrimary   = Color(0xFFF5EBDD); // cream/ivory
-const _textSecondary = Color(0xFFB9A79A); // warm mocha
-const _dividerColor  = Color(0xFF43342E);
-const _primary       = Color(0xFFF28C6B);
+const _textPrimary   = Color(0xFFFAF9F5); // on-dark (canvas)
+const _textSecondary = Color(0xFFA09D96); // on-dark-soft
+const _dividerColor  = Color(0xFF2A2826);
+const _primary       = Color(0xFFCC785C); // coral primary
+// Border radius scale
+const double _rSm = 6.0;
+const double _rMd = 8.0;
+const double _rLg = 12.0;
+const double _rXl = 16.0;
 // ─────────────────────────────────────────────────────
 
 // FCM background handler (must be top-level)
@@ -55,10 +60,10 @@ class TamStudioApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.dark(
-          surface: const Color(0xFF2B1F18),
-          primary: const Color(0xFFF28C6B),
+          surface: const Color(0xFF181715),
+          primary: const Color(0xFFCC785C),
         ),
-        scaffoldBackgroundColor: const Color(0xFF2B1F18),
+        scaffoldBackgroundColor: const Color(0xFF181715),
         useMaterial3: true,
       ),
       home: const KeyGatePage(),
@@ -192,7 +197,7 @@ class _KeyGatePageState extends State<KeyGatePage> {
                 child: const Center(child: Text('🎮', style: TextStyle(fontSize: 36))),
               ),
               const SizedBox(height: 20),
-              const Text('Tam Studio', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+              Text('Tam Studio', style: GoogleFonts.cormorantGaramond(fontSize: 28, fontWeight: FontWeight.w600, color: Colors.white)),
               const SizedBox(height: 8),
               Text('Google 계정으로 로그인하세요', style: TextStyle(fontSize: 13, color: Colors.white.withAlpha(128))),
               const SizedBox(height: 32),
@@ -399,9 +404,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
           children: [
             const Row(
               children: [
-                Icon(Icons.settings, color: Color(0xFFF28C6B), size: 24),
+                Icon(Icons.settings, color: _primary, size: 24),
                 SizedBox(width: 8),
-                Text('설정', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                Text('설정', style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white)),
               ],
             ),
             const SizedBox(height: 20),
@@ -2048,8 +2053,8 @@ class _BucketlistPageState extends State<BucketlistPage> {
           child: Row(
             children: [
               Text('Bucket List',
-                  style: GoogleFonts.notoSansKr(
-                      fontSize: 24, fontWeight: FontWeight.w700, color: _textPrimary)),
+                  style: GoogleFonts.cormorantGaramond(
+                      fontSize: 28, fontWeight: FontWeight.w600, color: _textPrimary)),
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.add, color: _primary),

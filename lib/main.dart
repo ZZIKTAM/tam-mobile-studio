@@ -16,22 +16,27 @@ import 'package:home_widget/home_widget.dart';
 import 'package:device_calendar/device_calendar.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 
-const String appVersion = '0.4.3';
+const String appVersion = '0.5.0';
 
-// ── Claude Design System — Dark Surfaces ──────────────
-const _bgCard        = Color(0xFF1F1E1B); // surface-dark-soft
-const _bgElevated    = Color(0xFF252320); // surface-dark-elevated
-const _accent        = Color(0xFFCC785C); // coral primary
-const _success       = Color(0xFF6EE7B7); // mint
-const _textPrimary   = Color(0xFFFAF9F5); // on-dark (canvas)
-const _textSecondary = Color(0xFFA09D96); // on-dark-soft
-const _dividerColor  = Color(0xFF2A2826);
-const _primary       = Color(0xFFCC785C); // coral primary
-// Border radius scale
-const double _rSm = 6.0;
-const double _rMd = 8.0;
-const double _rLg = 12.0;
-const double _rXl = 16.0;
+// ── Apple Dark + Warm Romantic ────────────────────────
+const _scaffold      = Color(0xFF000000); // surface-black
+const _bgCard        = Color(0xFF272729); // surface-tile-1
+const _bgElevated    = Color(0xFF2A2A2C); // surface-tile-2 (modal/sheet)
+const _bgSunken      = Color(0xFF252527); // surface-tile-3 (input bg)
+const _primary       = Color(0xFF2997FF); // Apple primary-on-dark
+const _accent        = Color(0xFFE8A598); // Rose Gold — couple accent
+const _accentSoft    = Color(0xFFFFB3C1); // Soft Pink — event dots
+const _success       = Color(0xFF30D158); // Apple Green
+const _danger        = Color(0xFFFF453A); // Apple Red
+const _textPrimary   = Color(0xFFFFFFFF); // body-on-dark
+const _textSecondary = Color(0xFFCCCCCC); // body-muted
+const _textMuted     = Color(0xFF7A7A7A); // placeholder / inactive
+const _dividerColor  = Color(0xFF38383A); // Apple separator (dark)
+// Border radius — Apple token
+const double _rSm   = 8.0;
+const double _rMd   = 11.0;
+const double _rLg   = 18.0;
+const double _rPill = 9999.0; // pill — FAB, chips
 // ─────────────────────────────────────────────────────
 
 // FCM background handler (must be top-level)
@@ -59,10 +64,30 @@ class TamStudioApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.dark(
-          surface: const Color(0xFF181715),
-          primary: const Color(0xFFCC785C),
+          surface: _bgCard,
+          primary: _primary,
+          secondary: _accent,
+          onSurface: _textPrimary,
+          onPrimary: _textPrimary,
+          onSecondary: const Color(0xFF1A1A1A), // dark text on rose-gold
+          error: _danger,
         ),
-        scaffoldBackgroundColor: const Color(0xFF181715),
+        scaffoldBackgroundColor: _scaffold,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: _scaffold,
+          surfaceTintColor: Colors.transparent,
+          scrolledUnderElevation: 0,
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          backgroundColor: _bgCard,
+          indicatorColor: _primary.withValues(alpha: 0.15),
+          labelTextStyle: WidgetStatePropertyAll(TextStyle(
+            fontFamily: 'Pretendard',
+            fontSize: 11,
+            fontWeight: FontWeight.w400,
+          )),
+        ),
+        dividerColor: _dividerColor,
         useMaterial3: true,
       ),
       home: const KeyGatePage(),
@@ -190,18 +215,18 @@ class _KeyGatePageState extends State<KeyGatePage> {
               Container(
                 width: 70, height: 70,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF28C6B),
-                  borderRadius: BorderRadius.circular(18),
+                  color: _accent,
+                  borderRadius: BorderRadius.circular(_rLg),
                 ),
                 child: const Center(child: Text('🎮', style: TextStyle(fontSize: 36))),
               ),
               const SizedBox(height: 20),
-              Text('Tam Studio', style: TextStyle(fontFamily: 'Pretendard', fontSize: 28, fontWeight: FontWeight.w600, color: Colors.white)),
+              Text('Tam Studio', style: TextStyle(fontFamily: 'Pretendard', fontSize: 28, fontWeight: FontWeight.w600, color: _textPrimary)),
               const SizedBox(height: 8),
-              Text('Google 계정으로 로그인하세요', style: TextStyle(fontSize: 13, color: Colors.white.withAlpha(128))),
+              Text('Google 계정으로 로그인하세요', style: TextStyle(fontFamily: 'Pretendard', fontSize: 13, color: _textSecondary)),
               const SizedBox(height: 32),
               if (_error.isNotEmpty) ...[
-                Text(_error, style: const TextStyle(fontSize: 12, color: Color(0xFFF44336))),
+                Text(_error, style: const TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _danger)),
                 const SizedBox(height: 12),
               ],
               SizedBox(
@@ -216,8 +241,8 @@ class _KeyGatePageState extends State<KeyGatePage> {
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFF28C6B),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    backgroundColor: _primary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rPill)),
                   ),
                 ),
               ),
@@ -294,8 +319,8 @@ class _HomePageState extends State<HomePage> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentTab,
         onDestinationSelected: (i) => setState(() => _currentTab = i),
-        backgroundColor: const Color(0xFF2B1F18),
-        indicatorColor: _bgElevated,
+        backgroundColor: _bgCard,
+        indicatorColor: _primary.withValues(alpha: 0.15),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.calendar_month), label: '데이트'),
           NavigationDestination(icon: Icon(Icons.settings), label: '설정'),
@@ -369,7 +394,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF44336)),
+            style: ElevatedButton.styleFrom(backgroundColor: _danger),
             child: const Text('해제', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -415,15 +440,15 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF241D1A),
+                color: _bgCard,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF43342E)),
+                border: Border.all(color: _dividerColor),
               ),
               child: Row(
                 children: [
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor: const Color(0xFF43342E),
+                    backgroundColor: _dividerColor,
                     backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
                     child: photoUrl == null
                         ? const Icon(Icons.person, color: Colors.white54, size: 28)
@@ -443,7 +468,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFF4CAF50), shape: BoxShape.circle)),
+                            Container(width: 8, height: 8, decoration: const BoxDecoration(color: _success, shape: BoxShape.circle)),
                             const SizedBox(width: 6),
                             Text('연동 중', style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(179))),
                           ],
@@ -462,11 +487,11 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               child: OutlinedButton(
                 onPressed: () => _signOut(context),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFF555555)),
+                  side: const BorderSide(color: _dividerColor),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: const Text('연동 해제 (로그아웃)', style: TextStyle(fontSize: 13, color: Color(0xFFEF5350))),
+                child: const Text('연동 해제 (로그아웃)', style: TextStyle(fontFamily: 'Pretendard', fontSize: 13, color: _danger)),
               ),
             ),
             const SizedBox(height: 12),
@@ -476,9 +501,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFF241D1A),
+                color: _bgCard,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF43342E)),
+                border: Border.all(color: _dividerColor),
               ),
               child: Row(
                 children: [
@@ -597,7 +622,7 @@ class _UpdateDialogState extends State<_UpdateDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: const Color(0xFF241D1A),
+      backgroundColor: _bgCard,
       title: const Text('업데이트 알림', style: TextStyle(color: Colors.white)),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -606,7 +631,7 @@ class _UpdateDialogState extends State<_UpdateDialog> {
               style: TextStyle(color: Colors.white.withAlpha(200))),
           if (_downloading) ...[
             const SizedBox(height: 16),
-            LinearProgressIndicator(value: _progress, color: const Color(0xFFF28C6B)),
+            LinearProgressIndicator(value: _progress, color: _primary),
             const SizedBox(height: 8),
             Text(_status, style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(128))),
           ],
@@ -621,7 +646,7 @@ class _UpdateDialogState extends State<_UpdateDialog> {
         if (!_downloading)
           ElevatedButton(
             onPressed: _downloadAndInstall,
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF28C6B)),
+            style: ElevatedButton.styleFrom(backgroundColor: _primary),
             child: const Text('업데이트', style: TextStyle(color: Colors.white)),
           ),
       ],
@@ -1257,7 +1282,7 @@ class _DatePageState extends State<DatePage>
         children: [
           // Tab bar: [캘린더 | 버킷리스트]
           Container(
-            color: const Color(0xFF2B1F18),
+            color: _bgCard,
             child: TabBar(
               controller: _tabCtrl,
               labelColor: _primary,
@@ -1517,7 +1542,7 @@ class _CalendarTabState extends State<_CalendarTab> {
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: 20),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEF4444).withAlpha(200),
+                            color: _danger.withAlpha(200),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(Icons.delete_outline, color: Colors.white),
@@ -2140,7 +2165,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: 20),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEF4444).withAlpha(180),
+                          color: _danger.withAlpha(180),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(Icons.delete_outline, color: Colors.white),
@@ -2298,7 +2323,7 @@ class _EventDetailSheet extends StatelessWidget {
           TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('취소')),
           ElevatedButton(
             onPressed: () => Navigator.pop(c, true),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+            style: ElevatedButton.styleFrom(backgroundColor: _danger),
             child: const Text('삭제', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -2436,7 +2461,7 @@ class _EventDetailSheet extends StatelessWidget {
                     ),
                     child: Text('삭제하기',
                         style: TextStyle(fontFamily: 'Pretendard', 
-                            color: const Color(0xFFEF4444), fontWeight: FontWeight.bold)),
+                            color: _danger, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -2938,7 +2963,7 @@ class _BucketDetailSheet extends StatelessWidget {
           TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('취소')),
           ElevatedButton(
             onPressed: () => Navigator.pop(c, true),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+            style: ElevatedButton.styleFrom(backgroundColor: _danger),
             child: const Text('삭제', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -3065,7 +3090,7 @@ class _BucketDetailSheet extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 13)),
                     child: Text('삭제하기',
                         style: TextStyle(fontFamily: 'Pretendard', 
-                            color: const Color(0xFFEF4444), fontWeight: FontWeight.bold)),
+                            color: _danger, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],

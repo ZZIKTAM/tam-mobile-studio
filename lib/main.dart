@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -16,25 +17,25 @@ import 'package:home_widget/home_widget.dart';
 import 'package:device_calendar/device_calendar.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 
-const String appVersion = '0.6.0';
+const String appVersion = '0.7.0';
 
-// ── Apple HIG Dark Mode ────────────────────────────────
+// ── iOS 26 Liquid Glass Light Mode ────────────────────────────────
 // Surface hierarchy: systemBackground → secondarySystemBackground → tertiarySystemBackground
-const _scaffold      = Color(0xFF000000); // systemBackground
-const _bgCard        = Color(0xFF1C1C1E); // secondarySystemBackground
-const _bgElevated    = Color(0xFF2C2C2E); // tertiarySystemBackground (modal/sheet)
-const _bgSunken      = Color(0xFF1C1C1E); // systemFill (input bg)
+const _scaffold      = Color(0xFFF2F4F8); // 연한 실버 배경
+const _bgCard        = Color(0xFFFFFFFF); // 카드 베이스 (opacity는 개별 적용)
+const _bgElevated    = Color(0xFFF8F9FC); // elevated 카드
+const _bgSunken      = Color(0xFFEEF0F5); // sunken input
 // Color roles: _primary = ALL interactive actions, _accent = couple brand data only
-const _primary       = Color(0xFF0A84FF); // systemBlue (dark) — buttons, FAB, links, tabs
+const _primary       = Color(0xFF0A84FF); // iOS blue — buttons, FAB, links, tabs
 const _accent        = Color(0xFFE8A598); // Rose Gold — event bars, selected day, progress (data only)
 const _accentSoft    = Color(0xFFFFB3C1); // Soft Pink — event dots
 const _success       = Color(0xFF30D158); // systemGreen
 const _danger        = Color(0xFFFF453A); // systemRed
 // Label hierarchy: label → secondaryLabel → tertiaryLabel
-const _textPrimary   = Color(0xFFFFFFFF); // label
-const _textSecondary = Color(0xFF8E8E93); // secondaryLabel
-const _textMuted     = Color(0xFF48484A); // tertiaryLabel
-const _dividerColor  = Color(0xFF3A3A3C); // separator
+const _textPrimary   = Color(0xFF0F0F1E); // 다크 텍스트
+const _textSecondary = Color(0xFF6B6B7A); // secondary 텍스트
+const _textMuted     = Color(0xFFABABB8); // muted 텍스트
+const _dividerColor  = Color(0x12000000); // 연한 구분선
 // Border radius — Apple HIG
 const double _rSm   = 8.0;   // small controls
 const double _rMd   = 12.0;  // cards, cells
@@ -67,13 +68,13 @@ class TamStudioApp extends StatelessWidget {
       title: 'Tam Studio',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.dark(
+        colorScheme: ColorScheme.light(
           surface: _bgCard,
           primary: _primary,
           secondary: _accent,
           onSurface: _textPrimary,
-          onPrimary: _textPrimary,
-          onSecondary: const Color(0xFF1A1A1A), // dark text on rose-gold
+          onPrimary: Colors.white,
+          onSecondary: const Color(0xFF1A1A1A),
           error: _danger,
         ),
         scaffoldBackgroundColor: _scaffold,
@@ -83,7 +84,7 @@ class TamStudioApp extends StatelessWidget {
           scrolledUnderElevation: 0,
         ),
         navigationBarTheme: NavigationBarThemeData(
-          backgroundColor: _bgCard,
+          backgroundColor: const Color(0xD9FFFFFF),
           indicatorColor: _primary.withValues(alpha: 0.20),
           iconTheme: WidgetStatePropertyAll(IconThemeData(size: 24, color: _textSecondary)),
           labelTextStyle: WidgetStateProperty.resolveWith((states) {
@@ -196,50 +197,63 @@ class _KeyGatePageState extends State<KeyGatePage> {
     }
 
     return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 72, height: 72,
-                decoration: BoxDecoration(
-                  color: _bgCard,
-                  borderRadius: BorderRadius.circular(_rLg),
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFF2F4F8), Color(0xFFECEEF6), Color(0xFFE8ECF4), Color(0xFFE4EAF6)],
+            stops: [0.0, 0.35, 0.6, 1.0],
+          ),
+        ),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 72, height: 72,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.75),
+                    borderRadius: BorderRadius.circular(_rLg),
+                    border: Border.all(color: Colors.black.withValues(alpha: 0.07)),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 20, offset: const Offset(0, 4)),
+                    ],
+                  ),
+                  child: Center(
+                    child: Icon(Icons.calendar_month_rounded, color: _primary, size: 36),
+                  ),
                 ),
-                child: const Center(
-                  child: Icon(Icons.favorite_rounded, color: _accent, size: 36),
+                const SizedBox(height: 20),
+                Text('Tam Studio', style: TextStyle(fontFamily: 'Pretendard', fontSize: 28, fontWeight: FontWeight.w700, color: _textPrimary)),
+                const SizedBox(height: 32),
+                if (_error.isNotEmpty) ...[
+                  Text(_error, style: const TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _danger)),
+                  const SizedBox(height: 12),
+                ],
+                SizedBox(
+                  width: double.infinity, height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: _signingIn ? null : _signInWithGoogle,
+                    icon: _signingIn
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.login, color: Colors.white),
+                    label: Text(
+                      _signingIn ? '로그인 중...' : 'Google로 로그인',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _primary,
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rBtn)),
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Text('Tam Studio', style: TextStyle(fontFamily: 'Pretendard', fontSize: 28, fontWeight: FontWeight.w700, color: _textPrimary)),
-              const SizedBox(height: 8),
-              Text('함께하는 우리만의 공간', style: TextStyle(fontFamily: 'Pretendard', fontSize: 14, color: _textSecondary)),
-              const SizedBox(height: 32),
-              if (_error.isNotEmpty) ...[
-                Text(_error, style: const TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _danger)),
-                const SizedBox(height: 12),
               ],
-              SizedBox(
-                width: double.infinity, height: 48,
-                child: ElevatedButton.icon(
-                  onPressed: _signingIn ? null : _signInWithGoogle,
-                  icon: _signingIn
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.login, color: Colors.white),
-                  label: Text(
-                    _signingIn ? '로그인 중...' : 'Google로 로그인',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primary,
-                    minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rBtn)),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -302,30 +316,97 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _buildFloatingTabBar() {
+    return Positioned(
+      bottom: 24,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(_rPill),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.62),
+                borderRadius: BorderRadius.circular(_rPill),
+                border: Border.all(color: Colors.black.withValues(alpha: 0.07)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 32,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildTabItem(0, Icons.calendar_month_outlined, Icons.calendar_month_rounded, '데이트'),
+                  _buildTabItem(1, Icons.person_outline, Icons.person_rounded, '설정'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabItem(int index, IconData icon, IconData activeIcon, String label) {
+    final isActive = _currentTab == index;
+    return GestureDetector(
+      onTap: () => setState(() => _currentTab = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive ? _primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(_rPill),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(isActive ? activeIcon : icon, size: 22,
+                color: isActive ? Colors.white : _textSecondary),
+            if (isActive) ...[
+              const SizedBox(width: 6),
+              Text(label, style: const TextStyle(
+                fontFamily: 'Pretendard',
+                fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white,
+              )),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final pages = [
+      DatePage(userKey: widget.userKey),
+      SettingsPage(userKey: widget.userKey, onDisconnect: _onDisconnect),
+    ];
     return Scaffold(
-      body: [
-        DatePage(userKey: widget.userKey),
-        SettingsPage(userKey: widget.userKey, onDisconnect: _onDisconnect),
-      ][_currentTab],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentTab,
-        onDestinationSelected: (i) => setState(() => _currentTab = i),
-        backgroundColor: _bgCard,
-        indicatorColor: _primary.withValues(alpha: 0.20),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.favorite_border, color: _textSecondary),
-            selectedIcon: Icon(Icons.favorite, color: _primary),
-            label: '데이트',
+      backgroundColor: Colors.transparent,
+      extendBody: true,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFF2F4F8), Color(0xFFECEEF6), Color(0xFFE8ECF4), Color(0xFFE4EAF6)],
+            stops: [0.0, 0.35, 0.6, 1.0],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline, color: _textSecondary),
-            selectedIcon: Icon(Icons.person, color: _primary),
-            label: '설정',
-          ),
-        ],
+        ),
+        child: Stack(
+          children: [
+            pages[_currentTab],
+            _buildFloatingTabBar(),
+          ],
+        ),
       ),
     );
   }
@@ -422,8 +503,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
     final photoUrl = user?.photoURL;
 
     return SafeArea(
+      bottom: false,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -436,8 +518,12 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                color: _bgCard,
+                color: Colors.white.withValues(alpha: 0.70),
                 borderRadius: BorderRadius.circular(_rLg),
+                border: Border.all(color: Colors.black.withValues(alpha: 0.07)),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 12, offset: const Offset(0, 2)),
+                ],
               ),
               child: Column(
                 children: [
@@ -516,8 +602,12 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: _bgCard,
+                color: Colors.white.withValues(alpha: 0.70),
                 borderRadius: BorderRadius.circular(_rLg),
+                border: Border.all(color: Colors.black.withValues(alpha: 0.07)),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 12, offset: const Offset(0, 2)),
+                ],
               ),
               child: Row(
                 children: [
@@ -956,9 +1046,17 @@ class EventCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: _bgCard,
+          color: Colors.white.withValues(alpha: 0.70),
           borderRadius: BorderRadius.circular(_rLg),
-          border: Border(left: BorderSide(color: barColor, width: 4)),
+          border: Border(
+            left: BorderSide(color: barColor, width: 4),
+            top: BorderSide(color: Colors.black.withValues(alpha: 0.06)),
+            right: BorderSide(color: Colors.black.withValues(alpha: 0.06)),
+            bottom: BorderSide(color: Colors.black.withValues(alpha: 0.06)),
+          ),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2)),
+          ],
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -988,7 +1086,7 @@ class EventCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: barColor.withAlpha(40),
+                  color: barColor.withValues(alpha: 40/255.0),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(tag,
@@ -1293,11 +1391,12 @@ class _DatePageState extends State<DatePage>
   @override
   Widget build(BuildContext context) {
     return SafeArea(
+      bottom: false,
       child: Column(
         children: [
           // Tab bar: [캘린더 | 버킷리스트]
           Container(
-            color: _bgCard,
+            color: Colors.white.withValues(alpha: 0.70),
             child: TabBar(
               controller: _tabCtrl,
               labelColor: _primary,
@@ -1512,7 +1611,7 @@ class _CalendarTabState extends State<_CalendarTab> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                   decoration: BoxDecoration(
-                    color: _primary.withAlpha(40),
+                    color: _primary.withValues(alpha: 40/255.0),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text('${dayEvents.length + nativeEvents.length}',
@@ -1557,7 +1656,7 @@ class _CalendarTabState extends State<_CalendarTab> {
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: 20),
                           decoration: BoxDecoration(
-                            color: _danger.withAlpha(200),
+                            color: _danger.withValues(alpha: 200/255.0),
                             borderRadius: BorderRadius.circular(_rLg),
                           ),
                           child: const Icon(Icons.delete_outline, color: Colors.white),
@@ -1623,8 +1722,9 @@ class _CalendarTabState extends State<_CalendarTab> {
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: _bgCard,
+                            color: Colors.white.withValues(alpha: 0.60),
                             borderRadius: BorderRadius.circular(_rMd),
+                            border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
                           ),
                           child: Row(
                             children: [
@@ -1843,7 +1943,7 @@ class _GalaxyCalendarGrid extends StatelessWidget {
                 top: 0,
                 width: cellW,
                 height: rowHeight,
-                child: Container(color: _primary.withAlpha(18)),
+                child: Container(color: _primary.withValues(alpha: 18/255.0)),
               ),
             // Day number cells
             Row(
@@ -1852,7 +1952,7 @@ class _GalaxyCalendarGrid extends StatelessWidget {
                 final isCurrentMonth = day.month == focusedMonth.month;
                 final isToday = _norm(day) == _norm(DateTime.now());
                 final isSel = col == selCol && isCurrentMonth;
-                Color textColor = isCurrentMonth ? _textPrimary : _textSecondary.withAlpha(100);
+                Color textColor = isCurrentMonth ? _textPrimary : _textSecondary.withValues(alpha: 100/255.0);
                 if (isCurrentMonth && col == 0) textColor = _accent;
                 if (isCurrentMonth && col == 6) textColor = _primary;
 
@@ -1914,7 +2014,7 @@ class _GalaxyCalendarGrid extends StatelessWidget {
                   },
                   child: Container(
                     decoration: BoxDecoration(
-                      color: bar.color.withAlpha(220),
+                      color: bar.color.withValues(alpha: 220/255.0),
                       borderRadius: BorderRadius.horizontal(
                         left: bar.isStart ? const Radius.circular(4) : Radius.zero,
                         right: bar.isEnd ? const Radius.circular(4) : Radius.zero,
@@ -2169,7 +2269,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: 20),
                         decoration: BoxDecoration(
-                          color: _danger.withAlpha(180),
+                          color: _danger.withValues(alpha: 180/255.0),
                           borderRadius: BorderRadius.circular(_rLg),
                         ),
                         child: const Icon(Icons.delete_outline, color: Colors.white),
@@ -2207,10 +2307,17 @@ class _BucketlistPageState extends State<BucketlistPage> {
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 10),
                           decoration: BoxDecoration(
-                            color: _bgCard,
+                            color: Colors.white.withValues(alpha: 0.70),
                             borderRadius: BorderRadius.circular(_rLg),
                             border: Border(
-                                left: BorderSide(color: item.barColor, width: 4)),
+                              left: BorderSide(color: item.barColor, width: 4),
+                              top: BorderSide(color: Colors.black.withValues(alpha: 0.06)),
+                              right: BorderSide(color: Colors.black.withValues(alpha: 0.06)),
+                              bottom: BorderSide(color: Colors.black.withValues(alpha: 0.06)),
+                            ),
+                            boxShadow: [
+                              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2)),
+                            ],
                           ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
@@ -2270,7 +2377,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: item.priorityColor.withAlpha(40),
+                                    color: item.priorityColor.withValues(alpha: 40/255.0),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(item.priorityLabel,
@@ -2395,7 +2502,7 @@ class _EventDetailSheet extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: _accent.withAlpha(40),
+                      color: _accent.withValues(alpha: 40/255.0),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text('기념일',
@@ -2411,7 +2518,7 @@ class _EventDetailSheet extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: _primary.withAlpha(30),
+                color: _primary.withValues(alpha: 30/255.0),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(event.category,
@@ -2585,8 +2692,8 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
       builder: (ctx, child) => Theme(
-        data: ThemeData.dark().copyWith(
-          colorScheme: const ColorScheme.dark(primary: _primary),
+        data: ThemeData.light().copyWith(
+          colorScheme: const ColorScheme.light(primary: _primary),
         ),
         child: child!,
       ),
@@ -2606,8 +2713,8 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
       firstDate: _date,
       lastDate: DateTime(2030),
       builder: (ctx, child) => Theme(
-        data: ThemeData.dark().copyWith(
-          colorScheme: const ColorScheme.dark(primary: _primary),
+        data: ThemeData.light().copyWith(
+          colorScheme: const ColorScheme.light(primary: _primary),
         ),
         child: child!,
       ),
@@ -2625,8 +2732,8 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
       context: context,
       initialTime: init,
       builder: (ctx, child) => Theme(
-        data: ThemeData.dark().copyWith(
-          colorScheme: const ColorScheme.dark(primary: _primary),
+        data: ThemeData.light().copyWith(
+          colorScheme: const ColorScheme.light(primary: _primary),
         ),
         child: child!,
       ),
@@ -3027,7 +3134,7 @@ class _BucketDetailSheet extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: item.priorityColor.withAlpha(40),
+                    color: item.priorityColor.withValues(alpha: 40/255.0),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(item.priorityLabel,

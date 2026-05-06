@@ -72,6 +72,6 @@ flutter:
     - assets/fonts/
 
   fonts:
-    - family: Pretendard
+    - family: NotoSansKR
       fonts:
-        - asset: assets/fonts/PretendardVariable.ttf
+        - asset: assets/fonts/NotoSansKR-VariableFont.ttf

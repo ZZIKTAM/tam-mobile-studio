@@ -17,7 +17,7 @@ import 'package:home_widget/home_widget.dart';
 import 'package:device_calendar/device_calendar.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 
-const String appVersion = '0.7.0';
+const String appVersion = '0.8.0';
 
 // ── iOS 26 Liquid Glass Light Mode ────────────────────────────────
 // Surface hierarchy: systemBackground → secondarySystemBackground → tertiarySystemBackground
@@ -90,7 +90,7 @@ class TamStudioApp extends StatelessWidget {
           labelTextStyle: WidgetStateProperty.resolveWith((states) {
             final selected = states.contains(WidgetState.selected);
             return TextStyle(
-              fontFamily: 'Pretendard',
+              fontFamily: 'NotoSansKR',
               fontSize: 11,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
               color: selected ? _primary : _textSecondary,
@@ -228,10 +228,10 @@ class _KeyGatePageState extends State<KeyGatePage> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text('Tam Studio', style: TextStyle(fontFamily: 'Pretendard', fontSize: 28, fontWeight: FontWeight.w700, color: _textPrimary)),
+                Text('Tam Studio', style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 28, fontWeight: FontWeight.w700, color: _textPrimary)),
                 const SizedBox(height: 32),
                 if (_error.isNotEmpty) ...[
-                  Text(_error, style: const TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _danger)),
+                  Text(_error, style: const TextStyle(fontFamily: 'NotoSansKR', fontSize: 12, color: _danger)),
                   const SizedBox(height: 12),
                 ],
                 SizedBox(
@@ -317,36 +317,35 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildFloatingTabBar() {
+    final bottomInset = MediaQuery.of(context).viewPadding.bottom;
     return Positioned(
-      bottom: 24,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(_rPill),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.62),
-                borderRadius: BorderRadius.circular(_rPill),
-                border: Border.all(color: Colors.black.withValues(alpha: 0.07)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.12),
-                    blurRadius: 32,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildTabItem(0, Icons.calendar_month_outlined, Icons.calendar_month_rounded, '데이트'),
-                  _buildTabItem(1, Icons.person_outline, Icons.person_rounded, '설정'),
-                ],
-              ),
+      bottom: bottomInset + 16,
+      left: 16,
+      right: 16,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            height: 64,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.72),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.black.withValues(alpha: 0.07)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.10),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                _buildTabItem(0, Icons.calendar_month_outlined, Icons.calendar_month_rounded, 'Calendar'),
+                _buildTabItem(1, Icons.person_outline, Icons.person_rounded, 'Profile'),
+              ],
             ),
           ),
         ),
@@ -356,27 +355,39 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildTabItem(int index, IconData icon, IconData activeIcon, String label) {
     final isActive = _currentTab == index;
-    return GestureDetector(
-      onTap: () => setState(() => _currentTab = index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        decoration: BoxDecoration(
-          color: isActive ? _primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(_rPill),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _currentTab = index),
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(isActive ? activeIcon : icon, size: 22,
-                color: isActive ? Colors.white : _textSecondary),
-            if (isActive) ...[
-              const SizedBox(width: 6),
-              Text(label, style: const TextStyle(
-                fontFamily: 'Pretendard',
-                fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white,
-              )),
-            ],
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              width: 40,
+              height: 32,
+              decoration: BoxDecoration(
+                color: isActive
+                    ? _primary.withValues(alpha: 0.15)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                isActive ? activeIcon : icon,
+                size: 20,
+                color: isActive ? _primary : _textSecondary,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'NotoSansKR',
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                color: isActive ? _primary : _textSecondary,
+              ),
+            ),
           ],
         ),
       ),
@@ -511,7 +522,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
           children: [
             // Title — Apple large title style
             const Text('설정',
-                style: TextStyle(fontFamily: 'Pretendard', fontSize: 28, fontWeight: FontWeight.bold, color: _textPrimary)),
+                style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 28, fontWeight: FontWeight.bold, color: _textPrimary)),
             const SizedBox(height: 24),
 
             // Account card — profile + sign-out grouped (Apple HIG: related actions in same section)
@@ -553,11 +564,11 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                             children: [
                               if (displayName.isNotEmpty)
                                 Text(displayName,
-                                    style: const TextStyle(fontFamily: 'Pretendard', fontSize: 16, fontWeight: FontWeight.bold, color: _textPrimary)),
+                                    style: const TextStyle(fontFamily: 'NotoSansKR', fontSize: 16, fontWeight: FontWeight.bold, color: _textPrimary)),
                               if (email.isNotEmpty) ...[
                                 const SizedBox(height: 2),
                                 Text(email,
-                                    style: const TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textSecondary)),
+                                    style: const TextStyle(fontFamily: 'NotoSansKR', fontSize: 12, color: _textSecondary)),
                               ],
                               const SizedBox(height: 6),
                               Row(
@@ -565,7 +576,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                                   Container(width: 8, height: 8, decoration: const BoxDecoration(color: _success, shape: BoxShape.circle)),
                                   const SizedBox(width: 6),
                                   const Text('Google 연동 중',
-                                      style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _textSecondary)),
+                                      style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 11, color: _textSecondary)),
                                 ],
                               ),
                             ],
@@ -589,7 +600,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                         ),
                       ),
                       child: const Text('연동 해제',
-                          style: TextStyle(fontFamily: 'Pretendard', fontSize: 15, fontWeight: FontWeight.w500)),
+                          style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 15, fontWeight: FontWeight.w500)),
                     ),
                   ),
                 ],
@@ -618,11 +629,11 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text('기기 캘린더 동기화',
-                            style: TextStyle(fontFamily: 'Pretendard', fontSize: 14, color: _textPrimary, fontWeight: FontWeight.w600)),
+                            style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 14, color: _textPrimary, fontWeight: FontWeight.w600)),
                         const SizedBox(height: 2),
                         Text(
                           _calPermission ? '캘린더 일정을 표시합니다' : '권한이 없습니다',
-                          style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _calPermission ? _success : _textSecondary),
+                          style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 11, color: _calPermission ? _success : _textSecondary),
                         ),
                       ],
                     ),
@@ -638,7 +649,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                       ),
                       child: const Text('권한 허용',
-                          style: TextStyle(fontFamily: 'Pretendard', fontSize: 12)),
+                          style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 12)),
                     ),
                 ],
               ),
@@ -651,10 +662,10 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               child: Column(
                 children: [
                   const Text('Tam Studio',
-                      style: TextStyle(fontFamily: 'Pretendard', fontSize: 12, fontWeight: FontWeight.w600, color: _textMuted)),
+                      style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 12, fontWeight: FontWeight.w600, color: _textMuted)),
                   const SizedBox(height: 2),
                   Text('v$appVersion',
-                      style: const TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _textMuted)),
+                      style: const TextStyle(fontFamily: 'NotoSansKR', fontSize: 11, color: _textMuted)),
                 ],
               ),
             ),
@@ -1067,7 +1078,7 @@ class EventCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(title,
-                        style: TextStyle(fontFamily: 'Pretendard', 
+                        style: TextStyle(fontFamily: 'NotoSansKR', 
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: _textPrimary,
@@ -1075,7 +1086,7 @@ class EventCard extends StatelessWidget {
                     if (subtitle.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(subtitle,
-                          style: TextStyle(fontFamily: 'Pretendard', 
+                          style: TextStyle(fontFamily: 'NotoSansKR', 
                             fontSize: 12,
                             color: _textSecondary,
                           )),
@@ -1090,7 +1101,7 @@ class EventCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(tag,
-                    style: TextStyle(fontFamily: 'Pretendard', 
+                    style: TextStyle(fontFamily: 'NotoSansKR', 
                       fontSize: 11,
                       color: barColor,
                       fontWeight: FontWeight.w600,
@@ -1238,6 +1249,19 @@ class _DatePageState extends State<DatePage>
     }).toList();
   }
 
+  String _categoryEmoji(String category) {
+    switch (category.toLowerCase()) {
+      case '식사': case 'dinner': case '밥': return '🍽️';
+      case '영화': case 'movie': return '🎬';
+      case '여행': case 'travel': return '✈️';
+      case '카페': case 'cafe': return '☕';
+      case '기념일': case 'anniversary': return '🎂';
+      case '쇼핑': case 'shopping': return '🛍️';
+      case '드라이브': case 'drive': return '🚗';
+      default: return '📅';
+    }
+  }
+
   Future<void> _pushWidgetData([DateTime? focused]) async {
     try {
       final ref = focused ?? _focusedDay;
@@ -1253,8 +1277,8 @@ class _DatePageState extends State<DatePage>
           .toList()
         ..sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
 
-      // Serialize upcoming event list (max 3) for widget event rows
-      final eventsJsonList = upcoming.take(3).map((ev) {
+      // Serialize upcoming event list (max 5) for widget calendar bar
+      final eventsJsonList = upcoming.take(5).map((ev) {
         final d = ev.startDateTime;
         return {
           'date': '${d.year}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')}',
@@ -1281,9 +1305,25 @@ class _DatePageState extends State<DatePage>
           })
           .toList();
 
+      // Next event info for widget header
+      final nextEv = upcoming.isNotEmpty ? upcoming.first : null;
+      final dday = nextEv != null
+          ? nextEv.startDateTime.difference(todayNorm).inDays
+          : -1;
+      final ddayStr = dday >= 0 ? (dday == 0 ? 'D-Day' : 'D-$dday') : '--';
+      final nextTitle = nextEv?.title ?? '';
+      final nextDate = nextEv != null
+          ? '${nextEv.startDateTime.month}월 ${nextEv.startDateTime.day}일'
+          : '';
+      final catEmoji = _categoryEmoji(nextEv?.category ?? '');
+
       await HomeWidget.saveWidgetData<String>('widgetMonth', monthStr);
       await HomeWidget.saveWidgetData<String>('widgetEventsJson', jsonEncode(eventsJsonList));
       await HomeWidget.saveWidgetData<String>('widgetDatesJson', jsonEncode(thisMonthDates));
+      await HomeWidget.saveWidgetData<String>('widgetDday', ddayStr);
+      await HomeWidget.saveWidgetData<String>('widgetNextTitle', nextTitle);
+      await HomeWidget.saveWidgetData<String>('widgetNextDate', nextDate);
+      await HomeWidget.saveWidgetData<String>('widgetNextEmoji', catEmoji);
       await HomeWidget.updateWidget(name: 'DateWidgetProvider', iOSName: 'DateWidget');
     } catch (e) {
       debugPrint('Widget sync failed: $e');
@@ -1519,7 +1559,7 @@ class _CalendarTabState extends State<_CalendarTab> {
                 child: Text(
                   _monthTitle(widget.focusedDay),
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontFamily: 'Pretendard', 
+                  style: TextStyle(fontFamily: 'NotoSansKR', 
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: _textPrimary,
@@ -1600,7 +1640,7 @@ class _CalendarTabState extends State<_CalendarTab> {
             children: [
               Text(
                 '${widget.selectedDay.month}월 ${widget.selectedDay.day}일',
-                style: TextStyle(fontFamily: 'Pretendard', 
+                style: TextStyle(fontFamily: 'NotoSansKR', 
                   fontSize: 13,
                   color: _textSecondary,
                   fontWeight: FontWeight.w600,
@@ -1615,7 +1655,7 @@ class _CalendarTabState extends State<_CalendarTab> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text('${dayEvents.length + nativeEvents.length}',
-                      style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _primary, fontWeight: FontWeight.bold)),
+                      style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 11, color: _primary, fontWeight: FontWeight.bold)),
                 ),
             ],
           ),
@@ -1630,7 +1670,7 @@ class _CalendarTabState extends State<_CalendarTab> {
                       const Icon(Icons.event_note_outlined, color: _accent, size: 36),
                       const SizedBox(height: 8),
                       const Text('아직 일정이 없어요 💕',
-                          style: TextStyle(fontFamily: 'Pretendard', color: _textSecondary, fontSize: 13)),
+                          style: TextStyle(fontFamily: 'NotoSansKR', color: _textSecondary, fontSize: 13)),
                       const SizedBox(height: 4),
                       TextButton.icon(
                         onPressed: widget.onAddEvent,
@@ -1711,7 +1751,7 @@ class _CalendarTabState extends State<_CalendarTab> {
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 8),
                               child: Text('기기 캘린더',
-                                  style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _textSecondary)),
+                                  style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 11, color: _textSecondary)),
                             ),
                             Expanded(child: Divider(color: _dividerColor, height: 1)),
                           ]),
@@ -1732,14 +1772,14 @@ class _CalendarTabState extends State<_CalendarTab> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(nev.title,
-                                    style: TextStyle(fontFamily: 'Pretendard', 
+                                    style: TextStyle(fontFamily: 'NotoSansKR', 
                                         fontSize: 13,
                                         color: _textSecondary,
                                         fontStyle: FontStyle.italic)),
                               ),
                               if (nev.start.hour != 0 || nev.start.minute != 0)
                                 Text(timeStr,
-                                    style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _textSecondary)),
+                                    style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 11, color: _textSecondary)),
                             ],
                           ),
                         );
@@ -1980,7 +2020,7 @@ class _GalaxyCalendarGrid extends StatelessWidget {
                                     : null,
                             child: Text(
                               '${day.day}',
-                              style: TextStyle(fontFamily: 'Pretendard',
+                              style: TextStyle(fontFamily: 'NotoSansKR',
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: isSel ? const Color(0xFF1A1A1A) : isToday ? _primary : textColor,
@@ -2077,7 +2117,7 @@ class _GalaxyCalendarGrid extends StatelessWidget {
               child: Text(
                 label,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Pretendard', 
+                style: TextStyle(fontFamily: 'NotoSansKR', 
                   fontSize: 11,
                   color: label == '일'
                       ? _accent
@@ -2195,7 +2235,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: Text('버킷리스트',
-              style: TextStyle(fontFamily: 'Pretendard',
+              style: TextStyle(fontFamily: 'NotoSansKR',
                   fontSize: 28, fontWeight: FontWeight.w600, color: _textPrimary)),
         ),
         // Progress bar
@@ -2219,7 +2259,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
               ),
               const SizedBox(height: 4),
               Text('$doneCount / $total 완료',
-                  style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _textSecondary)),
+                  style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 11, color: _textSecondary)),
             ],
           ),
         ),
@@ -2235,7 +2275,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
                 padding: const EdgeInsets.only(right: 6),
                 child: ChoiceChip(
                   label: Text(f,
-                      style: TextStyle(fontFamily: 'Pretendard',
+                      style: TextStyle(fontFamily: 'NotoSansKR',
                           fontSize: 12,
                           color: sel ? const Color(0xFF1A1A1A) : _textSecondary)),
                   selected: sel,
@@ -2256,7 +2296,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
           child: filtered.isEmpty
               ? Center(
                   child: const Text('함께할 일들을 채워봐요 ✨',
-                      style: TextStyle(fontFamily: 'Pretendard', color: _textSecondary, fontSize: 13)))
+                      style: TextStyle(fontFamily: 'NotoSansKR', color: _textSecondary, fontSize: 13)))
               : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 80),
                   itemCount: filtered.length,
@@ -2352,7 +2392,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
                                     children: [
                                       Text(
                                         item.title,
-                                        style: TextStyle(fontFamily: 'Pretendard', 
+                                        style: TextStyle(fontFamily: 'NotoSansKR', 
                                           fontSize: 15,
                                           fontWeight: FontWeight.w700,
                                           color: item.done
@@ -2366,7 +2406,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
                                       if (item.category.isNotEmpty) ...[
                                         const SizedBox(height: 2),
                                         Text(item.category,
-                                            style: TextStyle(fontFamily: 'Pretendard', 
+                                            style: TextStyle(fontFamily: 'NotoSansKR', 
                                                 fontSize: 11,
                                                 color: _textSecondary)),
                                       ],
@@ -2381,7 +2421,7 @@ class _BucketlistPageState extends State<BucketlistPage> {
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(item.priorityLabel,
-                                      style: TextStyle(fontFamily: 'Pretendard', 
+                                      style: TextStyle(fontFamily: 'NotoSansKR', 
                                           fontSize: 10,
                                           color: item.priorityColor,
                                           fontWeight: FontWeight.bold)),
@@ -2495,7 +2535,7 @@ class _EventDetailSheet extends StatelessWidget {
                   event.endDate != null
                       ? '${event.formattedDate}  ~  ${_formatDateStr(event.endDate!)}'
                       : event.formattedDate,
-                  style: TextStyle(fontFamily: 'Pretendard', fontSize: 13, color: _textSecondary),
+                  style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 13, color: _textSecondary),
                 ),
                 const Spacer(),
                 if (event.eventType == 'anniversary')
@@ -2506,13 +2546,13 @@ class _EventDetailSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text('기념일',
-                        style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _accent, fontWeight: FontWeight.w600)),
+                        style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 11, color: _accent, fontWeight: FontWeight.w600)),
                   ),
               ],
             ),
             const SizedBox(height: 6),
             Text(event.title,
-                style: TextStyle(fontFamily: 'Pretendard', 
+                style: TextStyle(fontFamily: 'NotoSansKR', 
                     fontSize: 26, fontWeight: FontWeight.w700, color: _textPrimary)),
             const SizedBox(height: 6),
             Container(
@@ -2522,7 +2562,7 @@ class _EventDetailSheet extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(event.category,
-                  style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _primary, fontWeight: FontWeight.w600)),
+                  style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 11, color: _primary, fontWeight: FontWeight.w600)),
             ),
             const SizedBox(height: 12),
             Divider(color: _dividerColor),
@@ -2546,7 +2586,7 @@ class _EventDetailSheet extends StatelessWidget {
                 children: event.tags
                     .map((t) => Chip(
                           label: Text(t,
-                              style: TextStyle(fontFamily: 'Pretendard', 
+                              style: TextStyle(fontFamily: 'NotoSansKR', 
                                   fontSize: 11, color: _textSecondary)),
                           backgroundColor: _bgElevated,
                           side: BorderSide.none,
@@ -2579,7 +2619,7 @@ class _EventDetailSheet extends StatelessWidget {
                           borderRadius: BorderRadius.circular(_rLg)),
                     ),
                     child: Text('수정하기',
-                        style: TextStyle(fontFamily: 'Pretendard', color: _primary, fontWeight: FontWeight.bold)),
+                        style: TextStyle(fontFamily: 'NotoSansKR', color: _primary, fontWeight: FontWeight.bold)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -2590,7 +2630,7 @@ class _EventDetailSheet extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 13),
                     ),
                     child: Text('삭제하기',
-                        style: TextStyle(fontFamily: 'Pretendard', 
+                        style: TextStyle(fontFamily: 'NotoSansKR', 
                             color: _danger, fontWeight: FontWeight.bold)),
                   ),
                 ),
@@ -2617,7 +2657,7 @@ class _DetailRow extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: Text(text,
-              style: TextStyle(fontFamily: 'Pretendard', fontSize: 14, color: _textPrimary)),
+              style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 14, color: _textPrimary)),
         ),
       ],
     );
@@ -2811,17 +2851,17 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
             ),
             const SizedBox(height: 16),
             Text(isEdit ? '이벤트 수정' : '새 이벤트',
-                style: TextStyle(fontFamily: 'Pretendard', 
+                style: TextStyle(fontFamily: 'NotoSansKR', 
                     fontSize: 22, fontWeight: FontWeight.w700, color: _textPrimary)),
             const SizedBox(height: 20),
             // Title
             _SheetField(
               child: TextField(
                 controller: _titleCtrl,
-                style: TextStyle(fontFamily: 'Pretendard', fontSize: 15, color: _textPrimary),
+                style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 15, color: _textPrimary),
                 decoration: InputDecoration(
                   hintText: '이벤트 제목',
-                  hintStyle: TextStyle(fontFamily: 'Pretendard', color: _textSecondary),
+                  hintStyle: TextStyle(fontFamily: 'NotoSansKR', color: _textSecondary),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
@@ -2839,7 +2879,7 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
                       const Icon(Icons.calendar_today_outlined, size: 18, color: _textSecondary),
                       const SizedBox(width: 10),
                       Text(_formatDate(_date),
-                          style: TextStyle(fontFamily: 'Pretendard', fontSize: 14, color: _textPrimary)),
+                          style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 14, color: _textPrimary)),
                     ],
                   ),
                 ),
@@ -2859,7 +2899,7 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
                       const SizedBox(width: 10),
                       Text(
                         _endDate != null ? '~ ${_formatDate(_endDate!)}' : '종료일 (선택, 1박2일 등)',
-                        style: TextStyle(fontFamily: 'Pretendard', 
+                        style: TextStyle(fontFamily: 'NotoSansKR', 
                             fontSize: 14,
                             color: _endDate != null ? _textPrimary : _textSecondary),
                       ),
@@ -2887,7 +2927,7 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
                       const Icon(Icons.access_time, size: 18, color: _textSecondary),
                       const SizedBox(width: 10),
                       Text(_time.isEmpty ? '시간 (선택)' : _time,
-                          style: TextStyle(fontFamily: 'Pretendard', 
+                          style: TextStyle(fontFamily: 'NotoSansKR', 
                               fontSize: 14,
                               color: _time.isEmpty ? _textSecondary : _textPrimary)),
                       if (_time.isNotEmpty) ...[
@@ -2907,10 +2947,10 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
             _SheetField(
               child: TextField(
                 controller: _locationCtrl,
-                style: TextStyle(fontFamily: 'Pretendard', fontSize: 14, color: _textPrimary),
+                style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 14, color: _textPrimary),
                 decoration: InputDecoration(
                   hintText: '장소 (선택)',
-                  hintStyle: TextStyle(fontFamily: 'Pretendard', color: _textSecondary),
+                  hintStyle: TextStyle(fontFamily: 'NotoSansKR', color: _textSecondary),
                   prefixIcon: const Icon(Icons.location_on_outlined, size: 18, color: _textSecondary),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -2922,11 +2962,11 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
             _SheetField(
               child: TextField(
                 controller: _memoCtrl,
-                style: TextStyle(fontFamily: 'Pretendard', fontSize: 14, color: _textPrimary),
+                style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 14, color: _textPrimary),
                 maxLines: 3,
                 decoration: InputDecoration(
                   hintText: '메모 (선택)',
-                  hintStyle: TextStyle(fontFamily: 'Pretendard', color: _textSecondary),
+                  hintStyle: TextStyle(fontFamily: 'NotoSansKR', color: _textSecondary),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
@@ -2935,7 +2975,7 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
             const SizedBox(height: 16),
             // Category
             Text('카테고리',
-                style: TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
+                style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
@@ -2951,7 +2991,7 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(c,
-                        style: TextStyle(fontFamily: 'Pretendard', 
+                        style: TextStyle(fontFamily: 'NotoSansKR', 
                             fontSize: 12,
                             color: sel ? Colors.white : _textSecondary,
                             fontWeight: sel ? FontWeight.bold : FontWeight.normal)),
@@ -2962,16 +3002,16 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
             const SizedBox(height: 16),
             // Event type
             Text('이벤트 유형',
-                style: TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
+                style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             SegmentedButton<String>(
               segments: [
                 ButtonSegment(
                     value: 'normal',
-                    label: Text('일반', style: TextStyle(fontFamily: 'Pretendard', fontSize: 12))),
+                    label: Text('일반', style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 12))),
                 ButtonSegment(
                     value: 'anniversary',
-                    label: Text('기념일', style: TextStyle(fontFamily: 'Pretendard', fontSize: 12))),
+                    label: Text('기념일', style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 12))),
               ],
               selected: {_eventType},
               onSelectionChanged: (s) => setState(() => _eventType = s.first),
@@ -2985,7 +3025,7 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
             const SizedBox(height: 16),
             // Tags
             Text('태그',
-                style: TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
+                style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -2993,10 +3033,10 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
                   child: _SheetField(
                     child: TextField(
                       controller: _tagCtrl,
-                      style: TextStyle(fontFamily: 'Pretendard', fontSize: 13, color: _textPrimary),
+                      style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 13, color: _textPrimary),
                       decoration: InputDecoration(
                         hintText: '태그 입력 후 Enter',
-                        hintStyle: TextStyle(fontFamily: 'Pretendard', color: _textSecondary),
+                        hintStyle: TextStyle(fontFamily: 'NotoSansKR', color: _textSecondary),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       ),
@@ -3017,7 +3057,7 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
                 spacing: 6,
                 children: _tags
                     .map((t) => Chip(
-                          label: Text(t, style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _textPrimary)),
+                          label: Text(t, style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 11, color: _textPrimary)),
                           backgroundColor: _bgElevated,
                           side: BorderSide.none,
                           deleteIcon: const Icon(Icons.close, size: 14),
@@ -3045,7 +3085,7 @@ class _AddEditEventSheetState extends State<_AddEditEventSheet> {
                         width: 22, height: 22,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : Text('저장하기',
-                        style: TextStyle(fontFamily: 'Pretendard', 
+                        style: TextStyle(fontFamily: 'NotoSansKR', 
                             fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ),
@@ -3138,7 +3178,7 @@ class _BucketDetailSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(item.priorityLabel,
-                      style: TextStyle(fontFamily: 'Pretendard', 
+                      style: TextStyle(fontFamily: 'NotoSansKR', 
                           fontSize: 11, color: item.priorityColor, fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(width: 8),
@@ -3149,18 +3189,18 @@ class _BucketDetailSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(item.category,
-                      style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _textSecondary)),
+                      style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 11, color: _textSecondary)),
                 ),
               ],
             ),
             const SizedBox(height: 10),
             Text(item.title,
-                style: TextStyle(fontFamily: 'Pretendard', 
+                style: TextStyle(fontFamily: 'NotoSansKR', 
                     fontSize: 24, fontWeight: FontWeight.w700, color: _textPrimary)),
             if (item.done && item.doneAt.isNotEmpty) ...[
               const SizedBox(height: 6),
               Text('완료: ${item.doneAt}',
-                  style: TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _success)),
+                  style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 12, color: _success)),
             ],
             const SizedBox(height: 12),
             Divider(color: _dividerColor),
@@ -3176,7 +3216,7 @@ class _BucketDetailSheet extends StatelessWidget {
                 children: item.tags
                     .map((t) => Chip(
                           label: Text(t,
-                              style: TextStyle(fontFamily: 'Pretendard', 
+                              style: TextStyle(fontFamily: 'NotoSansKR', 
                                   fontSize: 11, color: _textSecondary)),
                           backgroundColor: _bgElevated,
                           side: BorderSide.none,
@@ -3209,7 +3249,7 @@ class _BucketDetailSheet extends StatelessWidget {
                           borderRadius: BorderRadius.circular(_rLg)),
                     ),
                     child: Text('수정하기',
-                        style: TextStyle(fontFamily: 'Pretendard', color: _primary, fontWeight: FontWeight.bold)),
+                        style: TextStyle(fontFamily: 'NotoSansKR', color: _primary, fontWeight: FontWeight.bold)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -3219,7 +3259,7 @@ class _BucketDetailSheet extends StatelessWidget {
                     style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 13)),
                     child: Text('삭제하기',
-                        style: TextStyle(fontFamily: 'Pretendard', 
+                        style: TextStyle(fontFamily: 'NotoSansKR', 
                             color: _danger, fontWeight: FontWeight.bold)),
                   ),
                 ),
@@ -3340,17 +3380,17 @@ class _AddEditBucketSheetState extends State<_AddEditBucketSheet> {
             ),
             const SizedBox(height: 16),
             Text(isEdit ? '버킷 수정' : '버킷 추가',
-                style: TextStyle(fontFamily: 'Pretendard', 
+                style: TextStyle(fontFamily: 'NotoSansKR', 
                     fontSize: 22, fontWeight: FontWeight.w700, color: _textPrimary)),
             const SizedBox(height: 20),
             // Title
             _SheetField(
               child: TextField(
                 controller: _titleCtrl,
-                style: TextStyle(fontFamily: 'Pretendard', fontSize: 15, color: _textPrimary),
+                style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 15, color: _textPrimary),
                 decoration: InputDecoration(
                   hintText: '버킷 제목',
-                  hintStyle: TextStyle(fontFamily: 'Pretendard', color: _textSecondary),
+                  hintStyle: TextStyle(fontFamily: 'NotoSansKR', color: _textSecondary),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
@@ -3361,11 +3401,11 @@ class _AddEditBucketSheetState extends State<_AddEditBucketSheet> {
             _SheetField(
               child: TextField(
                 controller: _memoCtrl,
-                style: TextStyle(fontFamily: 'Pretendard', fontSize: 14, color: _textPrimary),
+                style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 14, color: _textPrimary),
                 maxLines: 3,
                 decoration: InputDecoration(
                   hintText: '메모 (선택)',
-                  hintStyle: TextStyle(fontFamily: 'Pretendard', color: _textSecondary),
+                  hintStyle: TextStyle(fontFamily: 'NotoSansKR', color: _textSecondary),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
@@ -3374,7 +3414,7 @@ class _AddEditBucketSheetState extends State<_AddEditBucketSheet> {
             const SizedBox(height: 16),
             // Category
             Text('카테고리',
-                style: TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
+                style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
@@ -3390,7 +3430,7 @@ class _AddEditBucketSheetState extends State<_AddEditBucketSheet> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(c,
-                        style: TextStyle(fontFamily: 'Pretendard', 
+                        style: TextStyle(fontFamily: 'NotoSansKR', 
                             fontSize: 12,
                             color: sel ? Colors.white : _textSecondary,
                             fontWeight: sel ? FontWeight.bold : FontWeight.normal)),
@@ -3401,13 +3441,13 @@ class _AddEditBucketSheetState extends State<_AddEditBucketSheet> {
             const SizedBox(height: 16),
             // Priority
             Text('우선순위',
-                style: TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
+                style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             SegmentedButton<int>(
               segments: [
-                ButtonSegment(value: 1, label: Text('HIGH', style: TextStyle(fontFamily: 'Pretendard', fontSize: 12))),
-                ButtonSegment(value: 2, label: Text('MED', style: TextStyle(fontFamily: 'Pretendard', fontSize: 12))),
-                ButtonSegment(value: 3, label: Text('LOW', style: TextStyle(fontFamily: 'Pretendard', fontSize: 12))),
+                ButtonSegment(value: 1, label: Text('HIGH', style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 12))),
+                ButtonSegment(value: 2, label: Text('MED', style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 12))),
+                ButtonSegment(value: 3, label: Text('LOW', style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 12))),
               ],
               selected: {_priority},
               onSelectionChanged: (s) => setState(() => _priority = s.first),
@@ -3421,15 +3461,15 @@ class _AddEditBucketSheetState extends State<_AddEditBucketSheet> {
             const SizedBox(height: 16),
             // Tags
             Text('태그',
-                style: TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
+                style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             _SheetField(
               child: TextField(
                 controller: _tagCtrl,
-                style: TextStyle(fontFamily: 'Pretendard', fontSize: 13, color: _textPrimary),
+                style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 13, color: _textPrimary),
                 decoration: InputDecoration(
                   hintText: '태그 입력 후 Enter',
-                  hintStyle: TextStyle(fontFamily: 'Pretendard', color: _textSecondary),
+                  hintStyle: TextStyle(fontFamily: 'NotoSansKR', color: _textSecondary),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 ),
@@ -3447,7 +3487,7 @@ class _AddEditBucketSheetState extends State<_AddEditBucketSheet> {
                 spacing: 6,
                 children: _tags
                     .map((t) => Chip(
-                          label: Text(t, style: TextStyle(fontFamily: 'Pretendard', fontSize: 11, color: _textPrimary)),
+                          label: Text(t, style: TextStyle(fontFamily: 'NotoSansKR', fontSize: 11, color: _textPrimary)),
                           backgroundColor: _bgElevated,
                           side: BorderSide.none,
                           deleteIcon: const Icon(Icons.close, size: 14),
@@ -3474,7 +3514,7 @@ class _AddEditBucketSheetState extends State<_AddEditBucketSheet> {
                         width: 22, height: 22,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : Text('저장하기',
-                        style: TextStyle(fontFamily: 'Pretendard', 
+                        style: TextStyle(fontFamily: 'NotoSansKR', 
                             fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ),

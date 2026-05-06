@@ -1,158 +1,242 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 4x2 Date Widget — light glass style matching liquid_glass_preview.html -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="@drawable/widget_bg"
-    android:padding="8dp">
+    android:orientation="vertical"
+    android:padding="14dp">
 
-    <!-- Month header row -->
+    <!-- Header row: icon + "Tam Studio" | D-Day badge -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingBottom="4dp">
+        android:gravity="center_vertical">
+
         <TextView
-            android:id="@+id/tv_month"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:text="April 2026"
-            android:textColor="#F0EAF8"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:gravity="center" />
-        <TextView
-            android:id="@+id/tv_add"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text=" + "
-            android:textColor="#A78BFA"
-            android:textSize="16sp"
+            android:text="📅"
+            android:textSize="15sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="5dp"
+            android:text="Tam Studio"
+            android:textSize="13sp"
             android:textStyle="bold"
-            android:paddingStart="4dp"
-            android:paddingEnd="2dp" />
+            android:textColor="#0F0F1E" />
+
+        <TextView
+            android:id="@+id/tv_dday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/widget_badge_bg"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp"
+            android:text="D-?"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:textColor="#0A84FF" />
     </LinearLayout>
 
-    <!-- Day-of-week headers: 일 월 화 수 목 금 토 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingBottom="2dp">
-        <TextView android:id="@+id/tv_dh0" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="일" android:textColor="#E8A598" android:textSize="9sp" android:gravity="center" />
-        <TextView android:id="@+id/tv_dh1" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="월" android:textColor="#8892B0" android:textSize="9sp" android:gravity="center" />
-        <TextView android:id="@+id/tv_dh2" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="화" android:textColor="#8892B0" android:textSize="9sp" android:gravity="center" />
-        <TextView android:id="@+id/tv_dh3" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="수" android:textColor="#8892B0" android:textSize="9sp" android:gravity="center" />
-        <TextView android:id="@+id/tv_dh4" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="목" android:textColor="#8892B0" android:textSize="9sp" android:gravity="center" />
-        <TextView android:id="@+id/tv_dh5" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="금" android:textColor="#8892B0" android:textSize="9sp" android:gravity="center" />
-        <TextView android:id="@+id/tv_dh6" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="토" android:textColor="#A78BFA" android:textSize="9sp" android:gravity="center" />
-    </LinearLayout>
-
-    <!-- Row 0 -->
-    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="horizontal">
-        <TextView android:id="@+id/tv_d00" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d01" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d02" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d03" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d04" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d05" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d06" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-    </LinearLayout>
-    <!-- Row 1 -->
-    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="horizontal">
-        <TextView android:id="@+id/tv_d07" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d08" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d09" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d10" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d11" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d12" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d13" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-    </LinearLayout>
-    <!-- Row 2 -->
-    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="horizontal">
-        <TextView android:id="@+id/tv_d14" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d15" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d16" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d17" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d18" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d19" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d20" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-    </LinearLayout>
-    <!-- Row 3 -->
-    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="horizontal">
-        <TextView android:id="@+id/tv_d21" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d22" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d23" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d24" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d25" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d26" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d27" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-    </LinearLayout>
-    <!-- Row 4 -->
-    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="horizontal">
-        <TextView android:id="@+id/tv_d28" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d29" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d30" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d31" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d32" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d33" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d34" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-    </LinearLayout>
-    <!-- Row 5 -->
-    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="horizontal">
-        <TextView android:id="@+id/tv_d35" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d36" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d37" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d38" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d39" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d40" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-        <TextView android:id="@+id/tv_d41" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:textSize="10sp" android:gravity="center" android:textColor="#CDD6F4" />
-    </LinearLayout>
-
-    <!-- Divider (ImageView: RemoteViews does not support plain <View>) -->
+    <!-- Divider -->
     <ImageView
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#2D3A5C"
-        android:layout_marginTop="2dp"
-        android:layout_marginBottom="2dp" />
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="6dp"
+        android:background="#1A000000" />
 
-    <!-- Upcoming event list (3 rows) -->
+    <!-- "다음 일정" label -->
     <TextView
-        android:id="@+id/tv_ev0"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="일정 없음"
-        android:textColor="#A78BFA"
+        android:text="다음 일정"
         android:textSize="10sp"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:paddingStart="2dp"
-        android:paddingTop="1dp" />
-    <TextView
-        android:id="@+id/tv_ev1"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text=""
-        android:textColor="#8892B0"
-        android:textSize="10sp"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:paddingStart="2dp"
-        android:paddingTop="1dp" />
-    <TextView
-        android:id="@+id/tv_ev2"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text=""
-        android:textColor="#8892B0"
-        android:textSize="10sp"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:paddingStart="2dp"
-        android:paddingTop="1dp" />
+        android:textColor="#6B6B7A"
+        android:layout_marginBottom="5dp" />
 
+    <!-- Next event card -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/widget_event_card_bg"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="9dp">
+
+        <TextView
+            android:id="@+id/tv_next_emoji"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📅"
+            android:textSize="16sp"
+            android:layout_marginEnd="8dp" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_next_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="일정 없음"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#0F0F1E"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/tv_next_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="10sp"
+                android:textColor="#6B6B7A"
+                android:layout_marginTop="1dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Spacer -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Mini calendar bar — 5 upcoming date chips -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <!-- chip 0 -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+            <TextView
+                android:id="@+id/tv_chip_day_0"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="일"
+                android:textSize="9sp"
+                android:textColor="#6B6B7A" />
+            <TextView
+                android:id="@+id/tv_chip_date_0"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:gravity="center"
+                android:text="--"
+                android:textSize="11sp"
+                android:textColor="#0F0F1E" />
+        </LinearLayout>
+
+        <!-- chip 1 -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+            <TextView
+                android:id="@+id/tv_chip_day_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="일"
+                android:textSize="9sp"
+                android:textColor="#6B6B7A" />
+            <TextView
+                android:id="@+id/tv_chip_date_1"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:gravity="center"
+                android:text="--"
+                android:textSize="11sp"
+                android:textColor="#0F0F1E" />
+        </LinearLayout>
+
+        <!-- chip 2 -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+            <TextView
+                android:id="@+id/tv_chip_day_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="일"
+                android:textSize="9sp"
+                android:textColor="#6B6B7A" />
+            <TextView
+                android:id="@+id/tv_chip_date_2"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:gravity="center"
+                android:text="--"
+                android:textSize="11sp"
+                android:textColor="#0F0F1E" />
+        </LinearLayout>
+
+        <!-- chip 3 -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+            <TextView
+                android:id="@+id/tv_chip_day_3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="일"
+                android:textSize="9sp"
+                android:textColor="#6B6B7A" />
+            <TextView
+                android:id="@+id/tv_chip_date_3"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:gravity="center"
+                android:text="--"
+                android:textSize="11sp"
+                android:textColor="#0F0F1E" />
+        </LinearLayout>
+
+        <!-- chip 4 -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+            <TextView
+                android:id="@+id/tv_chip_day_4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="일"
+                android:textSize="9sp"
+                android:textColor="#6B6B7A" />
+            <TextView
+                android:id="@+id/tv_chip_date_4"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:gravity="center"
+                android:text="--"
+                android:textSize="11sp"
+                android:textColor="#0F0F1E" />
+        </LinearLayout>
+    </LinearLayout>
 </LinearLayout>
